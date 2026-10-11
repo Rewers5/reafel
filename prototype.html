@@ -1,0 +1,867 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1280">
+<title>reafel · prototype</title>
+<meta name="description" content="Executable prototype of reafel, a review tool for cardiologists diagnosing atrial fibrillation from 72 h ECG, activity and patient notes. Student concept, DTU 02810. Not a medical device. All data is synthetic.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@600&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --paper:#f3f3f1; --surface:#fff; --ink:#111; --ink-2:#55554f; --mute:#9a9a94;
+    --line:#dadad5; --line-soft:#ebebe7; --accent:#f04e2a; --accent-soft:#fce1da; --accent-ink:#c93a1b;
+    --a-rest:#e4e4e0; --a-walk:#bdbdb7; --a-active:#7c7c76; --a-sleep:#33332f;
+    --paper-grid:#f7c9bd; --paper-grid-minor:#fbe4dd;
+    --display:'Outfit',sans-serif; --sans:'Geist',system-ui,sans-serif; --mono:'Geist Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--paper);color:var(--ink);font:400 13px/1.5 var(--sans);-webkit-font-smoothing:antialiased}
+  body{min-width:1180px}
+  button,input,textarea,select{font:inherit;color:inherit}
+  button{cursor:pointer;background:none;border:0;padding:0}
+  ::selection{background:var(--accent-soft)}
+  .label{font:500 9px/1.3 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
+  .mono{font:400 11px/1.4 var(--mono)}
+  .h1{font:600 44px/1.1 var(--display);letter-spacing:-.02em}
+  .h2{font:600 24px/1.2 var(--display);letter-spacing:-.01em}
+  .h3{font:600 15px/1.33 var(--sans)}
+  .num{font:600 32px/1 var(--display);letter-spacing:-.01em}
+  .display{font:600 72px/.95 var(--display);letter-spacing:-.04em}
+  .small{font-size:11px;line-height:1.45;color:var(--mute)}
+  .muted{color:var(--mute)} .ink2{color:var(--ink-2)} .acc{color:var(--accent)}
+
+  /* top bar */
+  .top{height:56px;display:flex;align-items:center;gap:40px;padding:0 32px;border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:0;z-index:20}
+  .logo{font:600 22px/1 var(--display);letter-spacing:-.03em}
+  .tabs{display:flex;gap:28px}
+  .tab{display:flex;align-items:center;gap:8px;font:500 9px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--mute);padding:8px 0}
+  .tab i{width:6px;height:6px;background:var(--line);display:block}
+  .tab.on{color:var(--ink)} .tab.on i{background:var(--accent)}
+  .tab:hover{color:var(--ink)}
+  .who{margin-left:auto;font:500 9px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2)}
+
+  /* layout */
+  .screen{display:flex;min-height:calc(100vh - 56px)}
+  .main{flex:1;padding:28px 32px 48px;min-width:0}
+  .side{width:380px;flex:0 0 380px;border-left:1px solid var(--ink);padding:24px 24px 48px;background:var(--paper)}
+  .side.wide{width:460px;flex-basis:460px}
+  .crumb{font:500 9px/1.3 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+
+  /* primitives */
+  .btn{display:inline-flex;align-items:center;gap:10px;height:36px;padding:0 16px;border:1px solid var(--ink);background:var(--ink);color:#fff;font:500 9px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;transition:transform .08s, background .15s}
+  .btn:active{transform:translateY(1px)}
+  .btn.accent{background:var(--accent);border-color:var(--accent)}
+  .btn.accent:hover{background:var(--accent-ink);border-color:var(--accent-ink)}
+  .btn.ghost{background:transparent;color:var(--ink)}
+  .btn.ghost:hover{background:#fff}
+  .btn:disabled{opacity:.35;cursor:not-allowed;transform:none}
+  .btn svg{width:12px;height:12px}
+  .tag{display:inline-flex;align-items:center;height:18px;padding:0 6px;border:1px solid var(--ink);font:500 9px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
+  .tag.fill{background:var(--ink);color:#fff}
+  .tag.accent{background:var(--accent);border-color:var(--accent);color:#fff}
+  .tag.grey{background:var(--line-soft);border-color:var(--line-soft);color:var(--ink-2)}
+  .tag.soft{background:var(--accent-soft);border-color:var(--accent-soft);color:var(--accent-ink)}
+  .chip{display:inline-flex;align-items:center;height:20px;padding:0 7px;border:1px solid var(--ink);background:#fff;font:500 9px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
+  .chip.on{background:var(--ink);color:#fff}
+  .chip:hover:not(.on){background:var(--line-soft)}
+  .chips{display:flex;gap:6px;flex-wrap:wrap}
+  .box{background:#fff;border:1px solid var(--ink)}
+  .box.soft{border-color:var(--line)}
+  .card{background:#fff;border:1px solid var(--line);padding:14px 16px}
+  .field{width:100%;background:#fff;border:1px solid var(--line);padding:10px 12px;font:400 13px/1.5 var(--sans);resize:vertical;min-height:44px}
+  .field:focus{outline:2px solid var(--ink);outline-offset:-1px}
+  .field.flat{background:var(--line-soft);border-color:transparent}
+  .field.flat:focus{background:#fff}
+  .cb{width:16px;height:16px;border:1.5px solid var(--ink);background:#fff;display:inline-grid;place-items:center;flex:0 0 16px;cursor:pointer}
+  .cb.on{background:var(--ink)}
+  .cb svg{width:10px;height:10px;display:none} .cb.on svg{display:block}
+  .toast{position:fixed;left:50%;bottom:72px;transform:translateX(-50%) translateY(10px);background:var(--ink);color:#fff;padding:10px 16px;font:500 11px/1.3 var(--mono);letter-spacing:.04em;opacity:0;transition:.2s;z-index:50;pointer-events:none;max-width:560px;text-align:center}
+  .toast.show{opacity:1;transform:translateX(-50%)}
+  .shake{animation:shake .35s}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+  .hl{outline:2px solid var(--accent) !important;outline-offset:3px;animation:pulse 1.2s 3}
+  @keyframes pulse{50%{outline-color:transparent}}
+  kbd{font:400 10px/1 var(--mono);color:var(--mute);border:1px solid var(--line);padding:2px 5px;background:#fff}
+
+  /* 01 patients */
+  .pt-left{width:388px;flex:0 0 388px;padding:28px 32px 48px;border-right:1px solid var(--ink)}
+  .search{display:flex;align-items:center;gap:10px;height:46px;border:1px solid var(--ink);background:#fff;padding:0 14px;margin:20px 0 22px}
+  .search input{flex:1;border:0;outline:0;background:none;font-size:14px}
+  .search svg{width:16px;height:16px}
+  .cal{border-top:1px solid var(--line)}
+  .cal-row{display:flex;align-items:center;gap:22px;padding:14px 0;border-bottom:1px solid var(--line);cursor:pointer}
+  .cal-row .t{font:400 11px/1 var(--mono);width:34px;color:var(--ink-2)}
+  .cal-row .n{font:500 14px/1.3 var(--sans)} .cal-row .s{font-size:11px;color:var(--mute)}
+  .cal-row.done{opacity:.55} .cal-row.done .t,.cal-row.done .n{color:var(--mute)}
+  .cal-row.next{background:var(--accent);color:#fff;padding:18px 16px;margin:0 -16px;border:0;transition:background .1s}
+  .cal-row.next .t,.cal-row.next .s{color:#fff;opacity:.9}
+  .cal-row.next:active{background:var(--accent-ink)}
+  .cal-row.next .arrow{margin-left:auto;width:14px}
+  .tbl{width:100%;border-collapse:collapse;margin-top:18px;table-layout:fixed}
+  .tbl col.c1{width:16%}.tbl col.c2{width:11%}.tbl col.c3{width:20%}.tbl col.c4{width:17%}.tbl col.c5{width:9%}.tbl col.c6{width:11%}.tbl col.c7{width:16%}
+  .tbl th{text-align:left;font:500 9px/1.3 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--mute);padding:0 10px 10px;cursor:pointer;user-select:none;white-space:nowrap}
+  .tbl th:hover{color:var(--ink)} .tbl th.on{color:var(--ink)}
+  .tbl td{padding:14px 10px;border-top:1px solid var(--line);vertical-align:middle;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tbl tr.row{cursor:pointer} .tbl tr.row:hover td{background:#fff}
+  .tbl tr.cur td{background:#fff;border-top:1px solid var(--ink);border-bottom:1px solid var(--ink)}
+  .tbl tr.cur td:first-child{border-left:1px solid var(--ink)} .tbl tr.cur td:last-child{border-right:1px solid var(--ink)}
+  .tbl .nm{font:500 14px/1.3 var(--sans)} .tbl .sub{font-size:11px;color:var(--mute)}
+  .bar{display:inline-block;width:72px;height:4px;background:var(--line);vertical-align:middle;margin-right:10px;position:relative}
+  .bar i{position:absolute;left:0;top:0;bottom:0;background:var(--accent)}
+  .go{width:30px;height:30px;background:var(--accent);display:inline-grid;place-items:center;color:#fff;margin-left:12px}
+  .go:hover{background:var(--accent-ink)} .go svg{width:12px;height:12px}
+  .empty{padding:48px 0;text-align:center;color:var(--ink-2)}
+
+  /* 02 review */
+  .stats{display:flex;gap:36px;margin-left:auto;align-self:flex-end}
+  .stat .label{margin-bottom:6px}
+  .stat .num{display:inline}
+  .stat .u{font-size:11px;color:var(--ink-2);margin-left:4px}
+  .ov{margin-top:18px;background:#fff;border:1px solid var(--ink);padding:12px 16px 10px;position:relative}
+  .ov-h{display:flex;align-items:center;gap:14px;margin-bottom:6px}
+  .legend{display:flex;gap:14px;margin-left:auto}
+  .legend span{display:flex;align-items:center;gap:5px;font:500 9px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2)}
+  .legend i{width:8px;height:8px;display:block} .legend i.ring{border-radius:50%;border:1.5px solid var(--ink);width:7px;height:7px} .legend i.dot{border-radius:50%;background:var(--ink)}
+  canvas{display:block}
+  #ov{width:100%;height:230px;cursor:grab} #ov.drag{cursor:grabbing}
+  .ecg{margin-top:16px;background:#fff;border:1px solid var(--ink);padding:12px 16px 14px}
+  .ecg-h{display:flex;align-items:center;gap:14px;margin-bottom:10px}
+  .ecg-h .z{margin-left:auto;display:flex;gap:4px}
+  .strip{position:relative;height:96px;margin-top:8px;border:1px solid var(--line-soft);user-select:none}
+  .strip canvas{width:100%;height:100%;cursor:crosshair}
+  .strip .st{position:absolute;left:4px;bottom:2px;font:400 10px/1 var(--mono);color:var(--ink-2);background:rgba(255,255,255,.8);padding:2px 3px;pointer-events:none}
+  .mark{position:absolute;top:0;bottom:0;background:rgba(17,17,17,.12);border-left:1.5px solid var(--ink);border-right:1.5px solid var(--ink);pointer-events:none}
+  .mark b{position:absolute;left:-1.5px;top:-1px;transform:translateY(-100%);background:var(--ink);color:#fff;font:500 9px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;padding:4px 6px;white-space:nowrap}
+  .mark.new{background:rgba(240,78,42,.14);border-color:var(--accent)} .mark.new b{background:var(--accent)}
+  .onset{position:absolute;top:0;bottom:0;width:0;border-left:1.5px solid var(--accent);pointer-events:none}
+  .onset b{position:absolute;left:-1px;top:0;background:var(--accent);color:#fff;font:500 9px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;padding:4px 6px;white-space:nowrap}
+  .pop{position:absolute;z-index:30;width:340px;background:#fff;border:1px solid var(--ink);box-shadow:0 12px 32px rgba(0,0,0,.18);padding:14px}
+  .pop .label{color:var(--ink);margin-bottom:10px}
+  .evl{margin:8px 0 0}
+  .ev{display:flex;gap:14px;padding:12px 0 12px 0;border-bottom:1px solid var(--line);cursor:pointer;position:relative;align-items:flex-start}
+  .ev:hover{background:#fff}
+  .ev.on{background:#fff;border-left:3px solid var(--accent);margin-left:-24px;padding-left:21px;margin-right:-24px;padding-right:24px}
+  .ev .dot{width:7px;height:7px;border-radius:50%;background:var(--mute);margin-top:6px;flex:0 0 7px}
+  .ev .dot.af{background:var(--accent)} .ev .dot.ring{background:#fff;border:1.5px solid var(--ink);width:8px;height:8px}
+  .ev .tm{width:68px;flex:0 0 68px} .ev .tm b{font:500 11px/1.4 var(--mono)} .ev .tm span{display:block;font:400 11px/1.4 var(--mono);color:var(--mute)}
+  .ev .tx{flex:1;min-width:0} .ev .tx b{font:500 14px/1.3 var(--sans);display:block} .ev .tx span{font-size:11px;color:var(--mute)}
+  .ev .tag{margin-top:4px}
+  .quote{background:var(--line-soft);padding:12px 14px;display:flex;gap:10px;margin-top:12px}
+  .quote svg{width:14px;height:14px;flex:0 0 14px;margin-top:2px}
+  .quote b{font-weight:500;display:block} .quote span{font-size:11px;color:var(--mute)}
+  .ext{display:inline-flex;align-items:center;gap:6px;font:500 9px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
+  .ext i{width:6px;height:6px;border:1px solid var(--mute);transform:rotate(45deg)}
+
+  /* 03 summary */
+  .grid{display:grid;grid-template-columns:52px repeat(24,1fr);gap:3px;align-items:center;margin-top:12px}
+  .grid .d{font:500 9px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2)}
+  .cell{height:26px;background:#fff;border:1px solid var(--line-soft)}
+  .cell.off{background:var(--line-soft);border-color:var(--line-soft)}
+  .cell.af{background:var(--accent);color:#fff;font:500 11px/26px var(--mono);text-align:center;cursor:pointer;border-color:var(--accent)}
+  .cell.af:hover{background:var(--accent-ink)}
+  .cell.sus{background:var(--accent-soft);border-color:var(--accent-soft);color:var(--accent-ink);font:500 11px/26px var(--mono);text-align:center;cursor:pointer}
+  .hbar{display:grid;grid-template-columns:64px 1fr;gap:12px;align-items:center;margin-top:12px}
+  .hbar .label{color:var(--ink)}
+  .hb{height:8px;background:var(--line);position:relative;margin:2px 0}
+  .hb i{position:absolute;left:0;top:0;bottom:0;background:var(--mute)} .hb.af i{background:var(--accent)}
+  .hb span{position:absolute;left:calc(var(--w) + 8px);top:-4px;font:400 11px/1.4 var(--mono);color:var(--ink-2);white-space:nowrap}
+  .sym{display:flex;gap:12px;align-items:center;padding:14px 0;border-bottom:1px solid var(--line)}
+  .sym svg{width:14px;height:14px;flex:0 0 14px}
+  .sym b{display:block;font:500 14px/1.3 var(--sans)} .sym span{font-size:11px;color:var(--mute)}
+  .sym .tag{margin-left:auto}
+  .jf{margin-top:18px}
+  .jf .label{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+  .jf .field{min-height:70px}
+  .sel{width:100%;display:flex;align-items:center;background:#fff;border:1px solid var(--line);padding:0 12px;height:44px;font-size:14px;cursor:pointer;position:relative}
+  .sel select{position:absolute;inset:0;opacity:0;width:100%;cursor:pointer}
+  .sel .code{margin-left:auto;font:400 11px/1 var(--mono);color:var(--ink-2)}
+  .sel.empty{color:var(--mute)}
+  .note{background:var(--accent-soft);color:var(--accent-ink);padding:10px 14px;margin-top:14px;font-size:12px;display:flex;gap:10px;align-items:center}
+  .note button{text-decoration:underline;color:inherit;font-weight:500}
+
+  /* 04 consult */
+  .ovp{background:#fff;border:1px solid var(--ink);padding:14px 16px 16px;margin-top:18px}
+  .ovp-h{display:flex;align-items:center;gap:14px;margin-bottom:12px}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .kpi .num{font-size:30px} .kpi span{display:block;font-size:11px;color:var(--ink-2);margin-top:6px}
+  .tl{position:relative;height:40px;margin-top:16px;background:#fff;border:1px solid var(--line-soft)}
+  .tl .night{position:absolute;top:0;bottom:0;background:var(--line-soft)}
+  .tl .ep{position:absolute;top:0;bottom:0;background:var(--accent);min-width:3px}
+  .tl-d{display:flex;justify-content:space-between;margin-top:6px}
+  .mat{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px}
+  .mcard{background:#fff;border:1px solid var(--ink);padding:14px 14px 12px;transition:opacity .2s}
+  .mcard.off{opacity:.45}
+  .mcard .h{display:flex;align-items:center;gap:10px;font:500 14px/1.3 var(--sans);cursor:pointer}
+  .mcard canvas{width:100%;height:90px;margin:12px 0 10px;display:block}
+  .q{display:flex;gap:12px;padding:16px 0;border-bottom:1px solid var(--line);align-items:flex-start}
+  .q p{margin:0;font-size:14px;line-height:1.4}
+  .q .tag{margin-top:8px}
+  .q.off p{color:var(--mute);text-decoration:line-through}
+  .addq{display:flex;gap:12px;align-items:center;padding:14px 0;color:var(--mute);cursor:text}
+  .addq input{flex:1;border:0;background:none;outline:0;font-size:14px}
+  .addq input:focus{color:var(--ink)}
+  .dx{background:var(--line-soft);padding:12px 14px;margin-top:18px}
+  .dx b{display:block;font:400 14px/1.4 var(--sans);margin-top:4px}
+  .pv{position:fixed;inset:0;background:var(--paper);z-index:60;overflow:auto;display:none}
+  .pv.show{display:block}
+  .pv .in{max-width:1080px;margin:0 auto;padding:56px 40px}
+  .pv .close{position:fixed;top:20px;right:24px}
+  .pv .kpis .num{font-size:56px}
+  .pv .mat{margin-top:40px}
+
+  /* prototype bar + annotations */
+  .pbar{position:fixed;right:20px;bottom:20px;z-index:40;display:flex;gap:6px}
+  .pbar .btn{height:32px;box-shadow:0 6px 20px rgba(0,0,0,.15)}
+  .drawer{position:fixed;top:56px;right:0;bottom:0;width:400px;background:#fff;border-left:1px solid var(--ink);z-index:35;transform:translateX(100%);transition:transform .22s;overflow:auto;padding:22px 22px 90px}
+  .drawer.show{transform:none}
+  .drawer h4{margin:0;font:600 20px/1.2 var(--display);letter-spacing:-.01em}
+  .an{border:1px solid var(--line);padding:12px 14px;margin-top:12px}
+  .an .k{display:flex;align-items:center;gap:10px;font:500 14px/1.3 var(--sans)}
+  .an .k i{width:22px;height:22px;background:var(--ink);color:#fff;display:grid;place-items:center;font:500 10px/1 var(--mono)}
+  .an .k.x i{background:#fff;color:var(--ink);border:1px solid var(--ink)}
+  .an dl{margin:10px 0 0;display:grid;grid-template-columns:62px 1fr;gap:6px 10px;font-size:12px;line-height:1.45}
+  .an dt{font:500 9px/1.6 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--mute)} .an dd{margin:0;color:var(--ink-2)}
+  .an .show{margin-top:10px;font:500 9px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;text-decoration:underline}
+  .dc{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+  .dc label{display:flex;gap:10px;align-items:center;font-size:12px;cursor:pointer}
+  .dc .btn{justify-content:center}
+
+  @media print{.top,.pbar,.drawer,.side,.toast{display:none !important}.pv{position:static;display:block}body{min-width:0}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="logo">reafel.</div>
+  <nav class="tabs" id="tabs"></nav>
+  <div class="who">Dr. A. Holm — Cardiology outpatient</div>
+</header>
+<div id="app"></div>
+
+<div class="pv" id="pv"></div>
+<div class="toast" id="toast"></div>
+
+<div class="pbar">
+  <button class="btn ghost" id="b-anno" title="Microinteraction annotations for this screen">Annotations</button>
+  <button class="btn" id="b-demo">Prototype controls</button>
+</div>
+<aside class="drawer" id="drawer"></aside>
+
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-arrow" viewBox="0 0 12 12"><path d="M1 6h9M6.5 2.5 10 6l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 10 10"><path d="M1.5 5.5 4 8l4.5-6" fill="none" stroke="#fff" stroke-width="1.6"/></symbol>
+  <symbol id="i-search" viewBox="0 0 16 16"><circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M11 11l3.5 3.5" stroke="currentColor" stroke-width="1.6"/></symbol>
+  <symbol id="i-quote" viewBox="0 0 14 14"><path d="M2 2h10v7H6l-3 3V9H2z" fill="none" stroke="currentColor" stroke-width="1.3"/></symbol>
+</svg>
+
+<script>
+/* =========================================================
+   reafel prototype · synthetic data + state
+   ========================================================= */
+const T0 = new Date(2026, 9, 1, 10, 0, 0);          // Thu 1 Oct 2026 10:00 · recording start
+const H = 72;                                       // hours recorded
+const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const CLASSES = ['AF','Flutter','Ectopic','Sinus','Artefact'];
+const ACT_COL = {sleep:'#33332f', rest:'#e4e4e0', walk:'#bdbdb7', active:'#7c7c76'};
+const ACT_NAME = {sleep:'Sleep', rest:'Rest', walk:'Walk', active:'Active'};
+const ACT_VERB = {sleep:'sleeping', rest:'resting', walk:'walking', active:'physically active'};
+
+function rng(seed){ let s = seed >>> 0 || 1; return () => { s ^= s << 13; s ^= s >>> 17; s ^= s << 5; return ((s >>> 0) % 100000) / 100000; }; }
+const hDate = h => new Date(T0.getTime() + h * 3600e3);
+const pad = n => String(n).padStart(2,'0');
+const fDay = h => DAYS[hDate(h).getDay()];
+const fHM = h => { const d = hDate(h); return pad(d.getHours()) + ':' + pad(d.getMinutes()); };
+const fHMS = h => { const d = hDate(h); return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()); };
+const fDate = h => { const d = hDate(h); return DAYS[d.getDay()] + ' ' + d.getDate() + ' Oct'; };
+const fDur = s => s >= 60 ? Math.round(s/60) + ' min' : (s % 1 ? s.toFixed(1) : s) + ' s';
+
+/* activity segments: [start h, end h, type] */
+const ACT = [[0,2.5,'rest'],[2.5,3,'walk'],[3,7,'active'],[7,7.5,'walk'],[7.5,13,'rest'],[13,21,'sleep'],
+  [21,22,'rest'],[22,26,'active'],[26,26.5,'rest'],[26.5,30,'active'],[30,31,'walk'],[31,37,'rest'],[37,45,'sleep'],
+  [45,48.5,'rest'],[48.5,49.5,'walk'],[49.5,53,'rest'],[53,54,'walk'],[54,57,'active'],[57,61,'rest'],[61,69,'sleep'],[69,72,'rest']];
+const actAt = h => (ACT.find(s => h >= s[0] && h < s[1]) || ACT[ACT.length-1])[2];
+const actSince = h => { const s = ACT.find(s => h >= s[0] && h < s[1]); return s ? s[0] : 0; };
+
+/* patient notes (from the phone app, external) */
+const PT_NOTES_SEED = [
+  {h:23.75, text:'Felt dizzy and heart racing on the scaffold.', short:'Dizzy'},
+  {h:52.25, text:'Palpitations while sitting on the sofa.', short:'Palpitations'},
+  {h:60.5,  text:'Tight feeling in the chest before bed.', short:'Chest tight'},
+];
+
+/* automatic events · 14 */
+function seedEvents(){
+  const mk = (h, dur, kind, auto, conf, extra) => Object.assign({h, dur, kind, auto, conf, cls:null, reviewed:false, note:'', asked:false, user:false}, extra||{});
+  return [
+    mk(5.333, 360, 'Irregular rhythm', 'AF', .91, {cls:'AF', reviewed:true, note:'Irregularly irregular, no P waves. HR 125–140.'}),
+    mk(9.083, .8,  'Ectopic beat',     'Ectopic', .95, {cls:'Ectopic', reviewed:true, note:'Single PVC.'}),
+    mk(17.2,  2.4, 'Pause',            'Pause', .88, {cls:'Sinus', reviewed:true, note:'Sinus pause during sleep, benign.'}),
+    mk(19.667, 1.1,'Ectopic beats',    'Ectopic', .9, {cls:'Ectopic', reviewed:true, note:'Couplet.'}),
+    mk(21.917, 40, 'Tachycardia',      'Sinus tachy', .8, {cls:'Sinus', reviewed:true, note:'Sinus tachycardia on the stairs.'}),
+    mk(23.7,  840, 'Irregular rhythm', 'AF', .87),
+    mk(30.5,  300, 'Irregular rhythm', 'AF', .74),
+    mk(36.167, 1.5,'Ectopic beat',     'Ectopic', .93),
+    mk(40.5,   2.1,'Pause',            'Pause', .9),
+    mk(49.083, 25, 'Tachycardia',      'Sinus tachy', .77),
+    mk(52.167, 540,'Irregular rhythm', 'AF', .81),
+    mk(60.5,   0,  'Patient note',     'Sinus', .97),
+    mk(63.25,  1.8,'Pause',            'Pause', .86),
+    mk(69.333, .9, 'Ectopic beat',     'Ectopic', .94),
+  ];
+}
+
+const PATIENTS = [
+  {id:'jd', name:'John Doe',     age:42, sex:'M', cpr:'120384', rec:'Thu 1 – Sun 4 Oct · 72 h', burden:0.8, todo:9, status:'In review', consult:'Today 10:15', ct:1, cal:'10:15', loaded:true},
+  {id:'kh', name:'Karen Holst',  age:58, sex:'F', cpr:'030968', rec:'Mon 28 – Thu 1 Oct · 72 h', burden:3.2, todo:12, status:'Ready', consult:'Today 11:00', ct:2, cal:'11:00'},
+  {id:'mb', name:'Mogens Bruun', age:64, sex:'M', cpr:'210762', rec:'Tue 29 – Fri 2 Oct · 72 h', burden:0.0, todo:3, status:'Ready', consult:'Today 13:30', ct:3, cal:'13:30'},
+  {id:'ar', name:'Aisha Rahimi', age:47, sex:'F', cpr:'150779', rec:'Wed 30 – Sat 3 Oct · 72 h', burden:0.3, todo:6, status:'Ready', consult:'Tue 09:00', ct:4},
+  {id:'pl', name:'Per Lindqvist',age:61, sex:'M', cpr:'080465', rec:'Wed 30 – Sat 3 Oct · 72 h', burden:11.4, todo:21, status:'Ready', consult:'Tue 10:30', ct:5},
+  {id:'sm', name:'Sofie Madsen', age:44, sex:'F', cpr:'270282', rec:'Thu 24 – Sun 27 Sep · 72 h', burden:0.0, todo:0, status:'Diagnosed', consult:'Done', ct:9, cal:'09:30', done:true},
+  {id:'hd', name:'Henrik Dam',   age:55, sex:'M', cpr:'190571', rec:'Fri 25 – Mon 28 Sep · 72 h', burden:1.9, todo:0, status:'Diagnosed', consult:'Done', ct:9},
+  {id:'lf', name:'Lone Friis',   age:63, sex:'F', cpr:'040363', rec:'Sun 4 Oct – · day 2 of 3', burden:null, todo:null, status:'Recording', consult:'Fri 14:00', ct:6},
+];
+const DX = [
+  {code:'I48.0', name:'Paroxysmal atrial fibrillation'},
+  {code:'I48.1', name:'Persistent atrial fibrillation'},
+  {code:'I48.4', name:'Atrial flutter'},
+  {code:'I49.3', name:'Ventricular premature beats'},
+  {code:'R00.2', name:'Palpitations, no arrhythmia'},
+];
+
+function initialState(){
+  const events = seedEvents();
+  return {
+    screen: 'patients',
+    search: '', filter: 'all', sort: {key:'ct', dir:1}, selPt: 'jd',
+    events, ptNotes: PT_NOTES_SEED.map(n => ({...n})),
+    sel: 5,                       // index into events (first unreviewed)
+    win: {t: events[5].h - 6/3600, dur: 30}, // window start (h) and strip duration (s)
+    evFilter: 'all', draftCls: null, draftNote: '',
+    journal: {anam:'42-year-old construction worker, smoker. Referred after emergency visit with palpitations and dizziness at work. No known heart disease.',
+              findings:null, findingsEdited:false, dx:null, plan:'Discuss stroke-risk assessment and rate versus rhythm control at consultation. Smoking cessation.', saved:null, err:null},
+    material: [{id:'m1', title:'Your normal rhythm', at:23.6944, mode:'sinus', text:'Evenly spaced beats, about 70 per minute.', on:true},
+               {id:'m2', title:'During an episode', at:23.7, mode:'af', text:'Uneven spacing and a faster pulse, about 140 per minute.', on:true}],
+    questions: [
+      {text:'On Thursday afternoon around 15:20 the recording shows a faster, uneven rhythm. What were you doing then?', src:'From event 01', on:true, ev:0},
+      {text:'Saturday 22:30 you noted chest tightness. The ECG shows normal rhythm then. What did it feel like?', src:'From patient note', on:true},
+      {text:'How much coffee, alcohol and nicotine on a working day?', src:null, on:false},
+      {text:'Anyone in the family with atrial fibrillation or stroke?', src:null, on:false},
+    ],
+    journalOffline: false, annoOpen: false, demoOpen: false, noteArrived: false,
+  };
+}
+let S = initialState();
+
+/* derived */
+const isAFsus = e => e.auto === 'AF';
+const isAF = e => e.cls === 'AF';
+const afEvents = () => S.events.filter(isAF);
+const afMinutes = () => afEvents().reduce((a,e) => a + e.dur/60, 0);
+const burden = () => afMinutes() / (H*60) * 100;
+const unreviewed = () => S.events.filter(e => !e.reviewed);
+const noteFor = e => S.ptNotes.find(n => Math.abs(n.h - e.h) * 60 <= 10);
+const eventAt = h => S.events.find(e => h >= e.h - 1/3600 && h <= e.h + Math.max(e.dur,2)/3600);
+
+/* heart-rate series · 5 min resolution */
+const HR = (() => { const r = rng(42); const base = {sleep:54, rest:70, walk:88, active:102}; const out = [];
+  for (let i = 0; i <= H*12; i++) { const h = i/12; let v = base[actAt(h)] + (r()-.5)*14 + Math.sin(h*1.3)*3;
+    const e = S.events.find(e => isAFsus(e) && h >= e.h - .05 && h <= e.h + e.dur/3600 + .05); if (e) v = 128 + r()*22;
+    out.push(v); } return out; })();
+
+/* =========================================================
+   helpers
+   ========================================================= */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let toastT; function toast(m){ const t = $('#toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2600); }
+const ico = (id, cls='') => `<svg class="${cls}"><use href="#${id}"/></svg>`;
+function go(screen){ S.screen = screen; location.hash = '#/' + screen; render(); window.scrollTo(0,0); }
+function evTag(e){ if (!e.reviewed) return '<span class="tag grey">Unreviewed</span>'; return e.cls === 'AF' ? '<span class="tag accent">AF</span>' : `<span class="tag fill">${esc(e.cls)}</span>`; }
+const evIndex = e => S.events.indexOf(e);
+const evNum = e => pad(evIndex(e) + 1);
+
+/* =========================================================
+   ECG synthesis
+   ========================================================= */
+function rhythmAt(h){ const e = S.events.find(e => h >= e.h && h < e.h + Math.max(e.dur, .4)/3600);
+  if (!e) return 'sinus'; if (e.auto === 'AF') return 'af'; if (e.auto === 'Pause') return 'pause'; if (e.auto === 'Ectopic') return 'ectopic'; if (e.auto === 'Sinus tachy') return 'tachy'; return 'sinus'; }
+function beats(t0h, durS, forceMode){ // returns [{t (s from t0), type}]
+  const r = rng(Math.floor(t0h*3600) + 7); const out = []; let t = -1.2, prevRR = .86;
+  while (t < durS + 1) { const h = t0h + t/3600; const m = forceMode || rhythmAt(h); let rr, type = 'n';
+    if (m === 'af') { rr = .30 + r()*.3 + r()*.12; type = 'af'; }
+    else if (m === 'tachy') { rr = .5 + (r()-.5)*.03; }
+    else if (m === 'pause') { rr = out.length % 6 === 3 ? 2.2 : .9; }
+    else if (m === 'ectopic') { if (out.length % 5 === 2) { rr = .5; type = 'pvc'; } else rr = .9 + (r()-.5)*.03; }
+    else { rr = .86 + (r()-.5)*.05; }
+    t += rr; out.push({t, type}); }
+  return out;
+}
+const g = (x, c, w, a) => a * Math.exp(-((x-c)*(x-c)) / (2*w*w));
+function ecgValue(t, bs, mode){ let v = 0;
+  for (const b of bs) { const x = t - b.t; if (x < -.3 || x > .5) continue;
+    if (b.type === 'pvc') { v += g(x,0,.03,-.9) + g(x,.07,.05,.7) + g(x,.3,.08,-.35); continue; }
+    if (b.type !== 'af') v += g(x,-.17,.025,.12);
+    v += g(x,-.03,.01,-.08) + g(x,0,.011,1) + g(x,.03,.012,-.22) + g(x,.26,.05,.28); }
+  if (mode === 'af') v += .04*Math.sin(t*2*Math.PI*6.2) + .025*Math.sin(t*2*Math.PI*9.1);
+  return v; }
+function drawECG(cv, t0h, durS, forceMode){
+  const dpr = window.devicePixelRatio || 1; const W = cv.clientWidth, Hh = cv.clientHeight; cv.width = W*dpr; cv.height = Hh*dpr;
+  const c = cv.getContext('2d'); c.scale(dpr,dpr); c.fillStyle = '#fff'; c.fillRect(0,0,W,Hh);
+  const pxmm = W / (durS*25); // 25 mm/s
+  c.lineWidth = 1; c.strokeStyle = '#fbe4dd'; c.beginPath(); for (let x = 0; x < W; x += pxmm) { c.moveTo(x,0); c.lineTo(x,Hh); } for (let y = Hh; y > 0; y -= pxmm) { c.moveTo(0,y); c.lineTo(W,y); } c.stroke();
+  c.strokeStyle = '#f7c9bd'; c.beginPath(); for (let x = 0; x < W; x += pxmm*5) { c.moveTo(x,0); c.lineTo(x,Hh); } for (let y = Hh; y > 0; y -= pxmm*5) { c.moveTo(0,y); c.lineTo(W,y); } c.stroke();
+  const bs = beats(t0h, durS, forceMode); const mode = forceMode || rhythmAt(t0h + 1/3600);
+  const base = Hh*.62, amp = pxmm*10; // 10 mm/mV
+  c.strokeStyle = '#111'; c.lineWidth = 1.3; c.beginPath();
+  for (let x = 0; x <= W; x++) { const t = x / W * durS; const v = ecgValue(t, bs, mode); const y = base - v*amp; x ? c.lineTo(x,y) : c.moveTo(x,y); } c.stroke();
+}
+
+/* =========================================================
+   overview canvas (72 h)
+   ========================================================= */
+const OV = {left:96, right:16, top:10};
+function ovX(h, W){ return OV.left + (W - OV.left - OV.right) * h / H; }
+function ovH(x, W){ return Math.max(0, Math.min(H, (x - OV.left) / (W - OV.left - OV.right) * H)); }
+function drawOverview(){
+  const cv = $('#ov'); if (!cv) return; const dpr = window.devicePixelRatio || 1; const W = cv.clientWidth, Hh = cv.clientHeight; cv.width = W*dpr; cv.height = Hh*dpr;
+  const c = cv.getContext('2d'); c.scale(dpr,dpr); c.fillStyle = '#fff'; c.fillRect(0,0,W,Hh);
+  const lab = (t, y, sub) => { c.fillStyle = sub ? '#9a9a94' : '#111'; c.font = (sub?'400 9px':'500 9px') + ' "Geist Mono"'; c.textAlign = 'left'; c.fillText(t.toUpperCase(), 16, y); };
+  const L = {hr:[OV.top, 60], act:[86, 10], ev:[112, 10], pt:[138, 10], my:[164, 10]};
+  // HR
+  lab('Heart rate', L.hr[0]+10); lab('bpm', L.hr[0]+22, true);
+  c.fillStyle = '#9a9a94'; c.font = '400 9px "Geist Mono"'; c.textAlign = 'right'; c.fillText('120', OV.left-6, L.hr[0]+14); c.fillText('60', OV.left-6, L.hr[0]+58);
+  c.strokeStyle = '#ebebe7'; c.lineWidth = 1; c.beginPath(); [L.hr[0]+10, L.hr[0]+54].forEach(y => { c.moveTo(OV.left,y); c.lineTo(W-OV.right,y); }); c.stroke();
+  const hrY = v => L.hr[0] + 54 - (v-60)/60*44;
+  S.events.filter(isAFsus).forEach(e => { c.fillStyle = e.reviewed && !isAF(e) ? '#ebebe7' : 'rgba(240,78,42,.16)'; c.fillRect(ovX(e.h,W)-2, L.hr[0], Math.max(4,(ovX(e.h+e.dur/3600,W)-ovX(e.h,W))), 60); });
+  c.strokeStyle = '#111'; c.lineWidth = 1; c.beginPath(); HR.forEach((v,i) => { const x = ovX(i/12,W), y = hrY(v); i ? c.lineTo(x,y) : c.moveTo(x,y); }); c.stroke();
+  // activity
+  lab('Activity', L.act[0]+8); ACT.forEach(s => { c.fillStyle = ACT_COL[s[2]]; c.fillRect(ovX(s[0],W), L.act[0], ovX(s[1],W)-ovX(s[0],W)-1, L.act[1]); });
+  // auto events
+  lab('Auto events', L.ev[0]+8); c.strokeStyle = '#ebebe7'; c.beginPath(); c.moveTo(OV.left, L.ev[0]+5); c.lineTo(W-OV.right, L.ev[0]+5); c.stroke();
+  S.events.forEach(e => { if (e.user) return; const x = ovX(e.h,W); c.fillStyle = isAFsus(e) ? '#f04e2a' : '#9a9a94'; const w = isAFsus(e) ? 4 : 1.5; c.fillRect(x-w/2, L.ev[0]-1, w, L.ev[1]+2); });
+  // patient notes
+  lab('Patient notes', L.pt[0]+8); c.strokeStyle = '#ebebe7'; c.beginPath(); c.moveTo(OV.left, L.pt[0]+5); c.lineTo(W-OV.right, L.pt[0]+5); c.stroke();
+  S.ptNotes.forEach(n => { const x = ovX(n.h,W); c.fillStyle = '#111'; c.beginPath(); c.arc(x, L.pt[0]+5, 4, 0, 7); c.fill(); c.font = '400 11px Geist'; c.textAlign = 'left'; c.fillText(n.short, x+8, L.pt[0]+9); });
+  // your notes
+  lab('Your notes', L.my[0]+8); c.strokeStyle = '#ebebe7'; c.beginPath(); c.moveTo(OV.left, L.my[0]+5); c.lineTo(W-OV.right, L.my[0]+5); c.stroke();
+  S.events.filter(e => e.reviewed && (e.note || e.user)).forEach(e => { const x = ovX(e.h,W); c.strokeStyle = e.user ? '#f04e2a' : '#111'; c.lineWidth = 1.5; c.fillStyle = '#fff'; c.beginPath(); c.arc(x, L.my[0]+5, 4, 0, 7); c.fill(); c.stroke(); });
+  // axis
+  c.fillStyle = '#9a9a94'; c.font = '400 9px "Geist Mono"'; c.textAlign = 'center'; c.strokeStyle = '#dadad5'; c.lineWidth = 1;
+  for (let h = 2; h <= H; h += 6) { const x = ovX(h,W); c.beginPath(); c.moveTo(x, 186); c.lineTo(x, 190); c.stroke(); c.fillText(fHM(h), x, 202); }
+  c.fillStyle = '#111'; c.font = '500 9px "Geist Mono"'; c.textAlign = 'left'; [[0,'THU 1 OCT'],[14,'FRI 2'],[38,'SAT 3'],[62,'SUN 4']].forEach(([h,t]) => { c.fillText(t, ovX(h,W)+(h?2:0), 218); });
+  c.strokeStyle = '#111'; c.lineWidth = 1; c.beginPath(); [14,38,62].forEach(h => { const x = ovX(h,W); c.moveTo(x, OV.top); c.lineTo(x, 190); }); c.stroke();
+  // window
+  const wx = ovX(S.win.t, W), ww = Math.max(14, ovX(S.win.t + S.win.dur/3600, W) - wx);
+  c.strokeStyle = '#111'; c.lineWidth = 1.5; c.strokeRect(wx - 7, OV.top - 4, ww + 14, 182);
+}
+
+/* =========================================================
+   screen 01 · patients
+   ========================================================= */
+function rPatients(){
+  const cal = PATIENTS.filter(p => p.cal).sort((a,b) => a.cal.localeCompare(b.cal));
+  return `<div class="screen">
+    <div class="pt-left">
+      <div class="crumb">001 / Locate patient</div>
+      <div class="display">patients.</div>
+      <div class="ink2" style="margin-top:8px" id="pt-count"></div>
+      <div class="search" data-anno="01A">${ico('i-search')}<input id="q" placeholder="Search name or CPR no." value="${esc(S.search)}" autocomplete="off"><kbd>⌘K</kbd></div>
+      <div style="display:flex;justify-content:space-between"><span class="label" style="color:var(--ink)">Today · Mon 5 Oct</span><span class="label">From calendar</span></div>
+      <div class="cal" style="margin-top:8px">${cal.map(p => `
+        <div class="cal-row ${p.done?'done':p.id==='jd'?'next':''}" data-open="${p.id}" ${p.id==='jd'?'data-anno="01B"':''}>
+          <span class="t">${p.cal}</span>
+          <div><div class="n">${p.name}</div><div class="s">${p.done ? 'Follow-up · done' : (p.id==='jd' ? 'Next · ' : '') + p.todo + ' events to review'}</div></div>
+          ${p.id==='jd' ? ico('i-arrow','arrow') : p.done ? '<span style="margin-left:auto;color:var(--mute)">✓</span>' : ''}
+        </div>`).join('')}</div>
+    </div>
+    <div class="main" id="pt-main"></div>
+  </div>`;
+}
+function rPatientTable(){
+  const q = S.search.trim().toLowerCase(); const digits = q.replace(/\D/g,'');
+  let rows = PATIENTS.filter(p => !q || p.name.toLowerCase().includes(q) || (digits && p.cpr.startsWith(digits)));
+  const F = {all:()=>true, ready:p=>p.status==='Ready', review:p=>p.status==='In review', dx:p=>p.status==='Diagnosed'};
+  rows = rows.filter(F[S.filter]);
+  const k = S.sort.key, d = S.sort.dir; rows.sort((a,b) => { let va = a[k], vb = b[k]; if (va == null) va = 1e9; if (vb == null) vb = 1e9; return (va > vb ? 1 : va < vb ? -1 : 0) * d; });
+  const cnt = {all:PATIENTS.length, ready:PATIENTS.filter(F.ready).length, review:PATIENTS.filter(F.review).length, dx:PATIENTS.filter(F.dx).length};
+  const th = (key, t, anno) => `<th class="${k===key?'on':''}" data-sort="${key}" ${anno?'data-anno="01C"':''}>${t}${k===key ? (d>0?' ↑':' ↓') : ''}</th>`;
+  const st = s => s==='Ready' ? '<span class="tag accent">Ready</span>' : s==='In review' ? '<span class="tag">In review</span>' : s==='Diagnosed' ? '<span class="tag fill">Diagnosed</span>' : '<span class="tag grey">Recording</span>';
+  $('#pt-count').textContent = `${PATIENTS.length} recordings · ${cnt.ready} ready for review`;
+  $('#pt-main').innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;margin-top:4px">
+      <div class="chips">${[['all','All '+cnt.all],['ready','Ready for review '+cnt.ready],['review','In review '+cnt.review],['dx','Diagnosed '+cnt.dx]].map(([v,t]) => `<button class="chip ${S.filter===v?'on':''}" data-filter="${v}">${t}</button>`).join('')}</div>
+      <span class="label" style="margin-left:auto">Sorted by ${ {ct:'consultation time',name:'patient',cpr:'CPR',burden:'AF burden',todo:'to review',status:'status'}[k] } · click a column to sort</span>
+    </div>
+    ${rows.length ? `<table class="tbl"><colgroup><col class="c1"><col class="c2"><col class="c3"><col class="c4"><col class="c5"><col class="c6"><col class="c7"></colgroup><thead><tr>${th('name','Patient')}${th('cpr','CPR')}<th>Recording</th>${th('burden','AF burden')}${th('todo','To review')}${th('status','Status')}${th('ct','Consult', true)}</tr></thead><tbody>
+      ${rows.map(p => `<tr class="row ${p.id===S.selPt?'cur':''}" data-open="${p.id}">
+        <td><div class="nm">${p.name}</div><div class="sub">${p.age} y · ${p.sex}</div></td>
+        <td class="mono">${p.cpr}-••••</td><td>${p.rec}</td>
+        <td>${p.burden==null ? '<span class="muted">—</span>' : `<span class="bar"><i style="width:${Math.min(100,p.burden*8)}%"></i></span><span class="mono">${p.burden.toFixed(1)} %</span>`}</td>
+        <td class="mono">${p.todo==null ? '<span class="muted">—</span>' : p.todo}</td><td>${st(p.status)}</td>
+        <td class="mono">${p.consult}${p.id===S.selPt ? `<button class="go" data-open="${p.id}" title="Open at first unreviewed event">${ico('i-arrow')}</button>` : ''}</td></tr>`).join('')}
+    </tbody></table>` : `<div class="empty"><div class="h3">No patient found, check the CPR no.</div><div class="small">Matches name or CPR digits from the first character.</div></div>`}`;
+}
+
+/* =========================================================
+   screen 02 · review
+   ========================================================= */
+function openEvent(i){ S.sel = i; const e = S.events[i]; S.win.t = e.h - 6/3600; S.draftCls = e.cls; S.draftNote = e.note; }
+function rReview(){
+  const p = PATIENTS[0]; const e = S.events[S.sel]; const rev = S.events.filter(x => x.reviewed).length;
+  const filt = {all:S.events, un:unreviewed(), af:S.events.filter(isAFsus), pt:S.events.filter(noteFor)};
+  const list = filt[S.evFilter];
+  const note = e && noteFor(e); const winEnd = S.win.t + S.win.dur/3600;
+  const act = actAt(S.win.t);
+  return `<div class="screen">
+    <div class="main">
+      <div class="crumb">002 / Review and classify</div>
+      <div style="display:flex;align-items:flex-end;gap:24px">
+        <div><div class="h1">${p.name}</div><div class="ink2" style="margin-top:4px">${p.age} y · Construction worker · Smoker · CPR ${p.cpr}-•••• · Recorded Thu 1 – Sun 4 Oct</div></div>
+        <div class="stats">
+          <div class="stat"><div class="label">AF burden</div><span class="num">${burden().toFixed(1)}</span><span class="u">% of 72 h</span></div>
+          <div class="stat"><div class="label">Events</div><span class="num">${S.events.length}</span><span class="u">${S.events.filter(isAFsus).length} AF suspect</span></div>
+          <div class="stat"><div class="label">Reviewed</div><span class="num" id="rev-n">${rev}</span><span class="u">of ${S.events.length}</span></div>
+        </div>
+      </div>
+      <div class="ov" data-anno="02A">
+        <div class="ov-h"><span class="label" style="color:var(--ink)">Overview · 72 h recording · drag to move window</span>
+          <div class="legend"><span><i style="background:#33332f"></i>Sleep</span><span><i style="background:#e4e4e0"></i>Rest</span><span><i style="background:#bdbdb7"></i>Walk</span><span><i style="background:#7c7c76"></i>Active</span><span><i style="background:#f04e2a"></i>AF suspect</span><span><i class="dot"></i>Pt note</span><span><i class="ring"></i>Reviewed</span></div></div>
+        <canvas id="ov"></canvas>
+      </div>
+      <div class="ecg" id="ecg" data-anno="02bA">
+        <div class="ecg-h"><span class="label" style="color:var(--ink)">ECG · ${fDate(S.win.t)} · ${fHMS(S.win.t)} – ${fHMS(winEnd)}</span><span class="label">Lead II · 25 mm/s · 10 mm/mV</span>
+          <span class="label" style="color:var(--ink-2)"><i style="display:inline-block;width:8px;height:8px;background:${ACT_COL[act]};vertical-align:-1px;margin-right:5px"></i>${ACT_NAME[act]} since ${fHM(actSince(S.win.t))}</span>
+          ${note && e ? `<span class="label" style="color:var(--ink-2)"><i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#111;vertical-align:-1px;margin-right:5px"></i>Pt note ${note.h>=e.h?'+':'−'}${Math.round(Math.abs(note.h-e.h)*60)} min</span>` : ''}
+          <div class="z">${[10,30,300].map(d => `<button class="chip ${S.win.dur===d?'on':''}" data-zoom="${d}">${d>=60?d/60+' min':d+' s'}</button>`).join('')}<button class="chip ${S.win.dur===0?'on':''}" data-zoom="0" title="Later release · entry point only">Free browse</button></div></div>
+        ${[0,1,2].map(i => `<div class="strip" data-strip="${i}"><canvas></canvas><span class="st"></span></div>`).join('')}
+      </div>
+    </div>
+    <div class="side">
+      <div style="display:flex;align-items:baseline;gap:10px"><span class="h2">events.</span><span class="small">${S.events.length} · sorted by time</span></div>
+      <div class="chips" style="margin-top:8px">${[['all','All '+S.events.length],['un','Unreviewed '+filt.un.length],['af','AF suspect '+filt.af.length],['pt','Pt notes '+filt.pt.length]].map(([v,t]) => `<button class="chip ${S.evFilter===v?'on':''}" data-evf="${v}">${t}</button>`).join('')}</div>
+      <div class="evl" style="max-height:300px;overflow:auto;margin:10px -24px 0;padding:0 24px" id="evl">
+        ${list.map(x => { const n = noteFor(x); const i = evIndex(x); return `<div class="ev ${i===S.sel?'on':''}" data-ev="${i}">
+          <span class="dot ${isAFsus(x)||isAF(x)?'af':''} ${x.user?'ring':''}"></span>
+          <div class="tm"><b>${fDay(x.h)} ${fHM(x.h)}</b><span>${x.dur ? fDur(x.dur) : 'note'}</span></div>
+          <div class="tx"><b>${esc(x.kind)}</b><span>${ACT_NAME[actAt(x.h)]} · ${n ? 'pt note “'+esc(n.short)+'”' : 'no pt note'}</span></div>
+          ${evTag(x)}</div>`; }).join('')}
+        ${!list.length ? '<div class="empty small">Nothing in this filter.</div>' : ''}
+      </div>
+      ${e ? `<div style="border-top:1px solid var(--ink);margin:12px -24px 0;padding:16px 24px 0" data-anno="02B">
+        <div style="display:flex;justify-content:space-between"><span class="label" style="color:var(--ink)">Event ${evNum(e)} · ${fDay(e.h)} ${fHM(e.h)}</span><span class="label acc">${e.user ? 'Your event' : 'Auto: ' + (e.auto==='AF'?'possible AF':e.auto.toLowerCase()) + ' · ' + e.conf.toFixed(2)}</span></div>
+        ${note ? `<div class="quote">${ico('i-quote')}<div><b>“${esc(note.text)}”</b><span>Patient · ${fDay(note.h)} ${fHM(note.h)} · phone</span></div></div>` : ''}
+        <div class="label" style="margin:16px 0 8px">Classify <span class="muted" style="letter-spacing:0;text-transform:none">· keys 1–5</span></div>
+        <div class="chips" id="cls">${CLASSES.map((c,i) => `<button class="chip ${S.draftCls===c?'on':''}" data-cls="${c}" title="Key ${i+1}">${c}</button>`).join('')}</div>
+        <div class="label" style="margin:16px 0 8px">Your note</div>
+        <textarea class="field" id="dnote" placeholder="Why you chose this class (optional)">${esc(S.draftNote)}</textarea>
+        <div style="display:flex;gap:8px;margin-top:14px">
+          <button class="btn accent" id="confirm">${e.reviewed ? 'Save and next' : 'Confirm and next'} ${ico('i-arrow')}</button>
+          <button class="btn ghost" id="ask" data-anno="02C" ${e.asked?'disabled':''}>${e.asked ? 'Added to questions' : 'Ask patient'}</button>
+        </div>
+        <div class="small" style="margin-top:10px">Enter confirms · 1–5 classifies · drag across a strip to create an event</div>
+      </div>` : ''}
+    </div>
+  </div>`;
+}
+function drawStrips(){
+  const n = 3; const d = (S.win.dur || 30) / n;
+  document.querySelectorAll('.strip').forEach((s,i) => { const cv = s.querySelector('canvas'); const t0 = S.win.t + i*d/3600; drawECG(cv, t0, d); s.querySelector('.st').textContent = fHMS(t0);
+    s.querySelectorAll('.onset,.mark').forEach(x => x.remove());
+    // onset markers + user marks inside this strip
+    S.events.forEach(e => { const rel = (e.h - t0)*3600; if (rel >= 0 && rel < d) {
+      if (e.user) { const el = document.createElement('div'); el.className = 'mark'; el.style.left = rel/d*100+'%'; el.style.width = Math.max(.5, e.dur/d*100)+'%'; el.innerHTML = `<b>Your mark · ${esc(e.cls)}${e.note?' · '+esc(e.note):''}</b>`; s.appendChild(el); }
+      else if (e.dur) { const el = document.createElement('div'); el.className = 'onset'; el.style.left = rel/d*100+'%'; el.innerHTML = `<b>Onset ${fHMS(e.h)} · auto</b>`; s.appendChild(el); }
+    } }); });
+}
+function bindReview(){
+  drawOverview(); drawStrips();
+  // window drag
+  const ov = $('#ov'); let down = false;
+  const setWin = (ev, snap) => { const r = ov.getBoundingClientRect(); let h = ovH(ev.clientX - r.left, ov.clientWidth) - (S.win.dur||30)/7200; if (snap) { const near = S.events.find(e => Math.abs(e.h - h) * 60 <= 2); if (near) { openEvent(evIndex(near)); render(); return; } } S.win.t = Math.max(0, Math.min(H - (S.win.dur||30)/3600, h)); drawOverview(); drawStrips(); $('.ecg-h .label').textContent = `ECG · ${fDate(S.win.t)} · ${fHMS(S.win.t)} – ${fHMS(S.win.t + (S.win.dur||30)/3600)}`; };
+  ov.addEventListener('mousedown', ev => { down = true; ov.classList.add('drag'); setWin(ev); });
+  window.onmousemove = ev => { if (down) setWin(ev); };
+  window.onmouseup = ev => { if (down) { down = false; ov.classList.remove('drag'); setWin(ev, true); } };
+  // zoom
+  document.querySelectorAll('[data-zoom]').forEach(b => b.onclick = () => { const d = +b.dataset.zoom; if (!d) { toast('Free browse is a later release · the entry point is here for testing'); return; } S.win.dur = d; render(); });
+  // list + filters
+  document.querySelectorAll('[data-evf]').forEach(b => b.onclick = () => { S.evFilter = b.dataset.evf; render(); });
+  document.querySelectorAll('[data-ev]').forEach(r => r.onclick = () => { openEvent(+r.dataset.ev); render(); });
+  document.querySelectorAll('[data-cls]').forEach(b => b.onclick = () => { S.draftCls = b.dataset.cls; document.querySelectorAll('[data-cls]').forEach(x => x.classList.toggle('on', x.dataset.cls === S.draftCls)); });
+  const dn = $('#dnote'); if (dn) { dn.oninput = () => S.draftNote = dn.value; dn.onkeydown = ev => { if (ev.key === 'Enter' && (ev.ctrlKey || ev.metaKey)) confirmEvent(); }; }
+  const cf = $('#confirm'); if (cf) cf.onclick = confirmEvent;
+  const ask = $('#ask'); if (ask) ask.onclick = () => { const e = S.events[S.sel]; const n = noteFor(e); e.asked = true;
+    S.questions.push({text: n ? `What were you doing ${fDay(n.h)} ${fHM(n.h)} when you felt “${n.text.replace(/\.$/,'').toLowerCase()}”?` : `${fDay(e.h)} ${fHM(e.h)} the recording shows ${e.kind.toLowerCase()} while ${ACT_VERB[actAt(e.h)]}. What were you doing and how did it feel?`, src:'From event ' + evNum(e), on:true, ev:evIndex(e)});
+    render(); toast('Question added · it is waiting on 04 Consult'); };
+  // drag to create event
+  document.querySelectorAll('.strip').forEach((s,i) => { const d = (S.win.dur||30)/3; const t0 = S.win.t + i*d/3600; let sx = null, mk = null;
+    const px2s = x => x / s.clientWidth * d;
+    s.onmousedown = ev => { if ($('.pop')) return; sx = ev.clientX - s.getBoundingClientRect().left; mk = document.createElement('div'); mk.className = 'mark new'; mk.innerHTML = '<b></b>'; s.appendChild(mk); ev.preventDefault(); };
+    s.onmousemove = ev => { if (sx == null) return; const x = ev.clientX - s.getBoundingClientRect().left; const a = Math.min(sx,x), b = Math.max(sx,x); mk.style.left = a+'px'; mk.style.width = (b-a)+'px'; mk.querySelector('b').textContent = `New mark · ${fHMS(t0 + px2s(a)/3600)} – ${fHMS(t0 + px2s(b)/3600)} · ${px2s(b-a).toFixed(1)} s`; };
+    s.onmouseup = ev => { if (sx == null) return; const x = ev.clientX - s.getBoundingClientRect().left; const a = Math.min(sx,x), b = Math.max(sx,x); const len = px2s(b-a); sx = null;
+      if (len < .5) { mk.remove(); toast('Drag at least 0.5 s to create an event'); return; }
+      openCreatePop(s, mk, t0 + px2s(a)/3600, len, ev); };
+    s.onmouseleave = () => { if (sx != null) { sx = null; mk && mk.remove(); } };
+  });
+}
+function confirmEvent(){ const e = S.events[S.sel]; if (!e) return; if (!S.draftCls) { $('#cls').classList.add('shake'); setTimeout(() => $('#cls').classList.remove('shake'), 400); toast('Choose a class first · the automatic label is only a suggestion'); return; }
+  e.cls = S.draftCls; e.note = S.draftNote; e.reviewed = true;
+  const next = S.events.findIndex((x,i) => !x.reviewed && i > S.sel); const any = S.events.findIndex(x => !x.reviewed);
+  if (next >= 0) openEvent(next); else if (any >= 0) openEvent(any); else { render(); toast('All events reviewed · go to 03 Summary'); return; }
+  render(); }
+function openCreatePop(strip, mk, h, len, ev){
+  const pop = document.createElement('div'); pop.className = 'pop'; pop.dataset.anno = '02bB'; let cls = null;
+  pop.innerHTML = `<div class="label">New event · classify</div><div class="chips">${CLASSES.map((c,i) => `<button class="chip" data-c="${c}">${c}</button>`).join('')}</div>
+    <textarea class="field flat" style="margin-top:12px;min-height:40px" placeholder="Add a note (optional)"></textarea>
+    <div style="display:flex;gap:8px;align-items:center;margin-top:12px"><button class="btn accent" data-save>Save event ${ico('i-arrow')}</button><button class="btn ghost" data-cancel>Cancel</button><span class="small">Enter · Esc</span></div>`;
+  ['mousedown','mouseup','mousemove'].forEach(t => pop.addEventListener(t, e => e.stopPropagation()));
+  const r = strip.getBoundingClientRect(); pop.style.left = Math.min(r.width - 350, Math.max(0, ev.clientX - r.left - 20)) + 'px'; pop.style.top = (r.height + 6) + 'px'; strip.appendChild(pop);
+  const close = () => { pop.remove(); mk.remove(); };
+  pop.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { cls = b.dataset.c; pop.querySelectorAll('[data-c]').forEach(x => x.classList.toggle('on', x.dataset.c === cls)); });
+  const save = () => { if (!cls) { pop.querySelector('.chips').classList.add('shake'); setTimeout(() => pop.querySelector('.chips').classList.remove('shake'), 400); return; }
+    const kind = cls === 'AF' ? 'Irregular rhythm' : cls === 'Artefact' ? 'Artefact' : cls + ' · your mark';
+    S.events.push({h, dur:+len.toFixed(1), kind, auto:cls==='AF'?'AF':'—', conf:1, cls, reviewed:true, note:pop.querySelector('textarea').value.trim(), asked:false, user:true});
+    S.events.sort((a,b) => a.h - b.h); S.sel = S.events.findIndex(e => e.h === h); S.draftCls = cls; S.draftNote = S.events[S.sel].note; render(); toast('Event saved · added to the list and to “Your notes”'); };
+  pop.querySelector('[data-save]').onclick = save; pop.querySelector('[data-cancel]').onclick = close;
+  pop.onkeydown = e => { if (e.key === 'Escape') close(); if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); save(); } };
+  pop.querySelector('textarea').focus(); pop.querySelectorAll('[data-c]')[0].focus();
+}
+
+/* =========================================================
+   screen 03 · summary
+   ========================================================= */
+function findingsDraft(){ const af = afEvents(); if (!af.length) return '72 h single-lead ECG. No confirmed AF episodes yet.';
+  const durs = af.map(e => e.dur/60); const tot = Math.round(afMinutes()); const mn = Math.round(Math.min(...durs)), mx = Math.round(Math.max(...durs));
+  const act = af.filter(e => ['walk','active'].includes(actAt(e.h))).length;
+  return `72 h single-lead ECG. ${af.length} AF episode${af.length>1?'s':''} (${mn}–${mx} min), ${tot} min in total, AF burden ${burden().toFixed(1)} %. Ventricular rate in AF 130–150 bpm. ${act} of ${af.length} episodes during walking or physical work.`; }
+function rSummary(){
+  const p = PATIENTS[0]; const af = afEvents(); const rev = S.events.filter(e => e.reviewed).length; const sus = S.events.filter(e => isAFsus(e) && !e.reviewed);
+  const J = S.journal; const findings = J.findingsEdited ? J.findings : findingsDraft();
+  // hour grid
+  const grid = {}; af.forEach(e => { const d = hDate(e.h); const key = DAYS[d.getDay()] + ' ' + d.getDate(); const hr = d.getHours(); grid[key] = grid[key] || {}; grid[key][hr] = (grid[key][hr]||0) + e.dur/60; });
+  const gsus = {}; sus.forEach(e => { const d = hDate(e.h); const key = DAYS[d.getDay()] + ' ' + d.getDate(); gsus[key] = gsus[key] || {}; gsus[key][d.getHours()] = e; });
+  const days = [['Thu 1',10,24],['Fri 2',0,24],['Sat 3',0,24],['Sun 4',0,10]];
+  // activity shares
+  const recS = {}; ACT.forEach(s => recS[s[2]] = (recS[s[2]]||0) + (s[1]-s[0])); const afS = {}; af.forEach(e => afS[actAt(e.h)] = (afS[actAt(e.h)]||0) + e.dur/60); const afT = afMinutes()||1;
+  const where = ['active','walk','rest','sleep'].map(a => ({a, rec:recS[a]/H*100, af:(afS[a]||0)/afT*100}));
+  const activeAf = Math.round(((afS.active||0)+(afS.walk||0))/afT*100), activeRec = Math.round((recS.active+recS.walk)/H*100);
+  // symptoms
+  const sym = S.ptNotes.map(n => { const e = S.events.find(e => Math.abs(e.h - n.h)*60 <= 10); return {n, e, af: e && isAF(e), sus: e && isAFsus(e) && !e.reviewed}; });
+  const match = sym.filter(s => s.af).length; const noNote = af.filter(e => !noteFor(e)).length;
+  const canSave = !!J.dx && !sus.length;
+  return `<div class="screen">
+    <div class="main">
+      <div class="crumb">003 / Summarise and diagnose</div>
+      <div style="display:flex;align-items:flex-end;gap:24px">
+        <div><div class="h1">${p.name}</div><div class="ink2" style="margin-top:4px">${rev} of ${S.events.length} events reviewed · ${af.length} confirmed AF · ${rev-af.length} other</div></div>
+        <div class="stats">
+          <div class="stat"><div class="label">AF burden</div><span class="num">${burden().toFixed(1)}</span><span class="u">%</span></div>
+          <div class="stat"><div class="label">AF episodes</div><span class="num">${af.length}</span></div>
+          <div class="stat"><div class="label">Longest</div><span class="num">${af.length ? Math.round(Math.max(...af.map(e=>e.dur))/60) : '—'}</span><span class="u">min</span></div>
+          <div class="stat"><div class="label">Rate in AF</div><span class="num">${af.length ? '130–150' : '—'}</span><span class="u">bpm</span></div>
+        </div>
+      </div>
+      ${sus.length ? `<div class="note">${sus.length} AF-suspect event${sus.length>1?'s are':' is'} still unreviewed. The summary and the journal draft only use confirmed events. <button data-goev="${evIndex(sus[0])}">Review them</button></div>` : ''}
+      <div class="box" style="margin-top:18px;padding:14px 16px 16px" data-anno="03A">
+        <div style="display:flex"><span class="label" style="color:var(--ink)">When · minutes in AF per hour of day</span><span class="label" style="margin-left:auto">Grey = not recorded · click a cell to open it in review</span></div>
+        <div class="grid">${days.map(([d,a,b]) => `<span class="d">${d}</span>${Array.from({length:24},(_,hh) => { const off = hh < a || hh >= b; const m = grid[d] && grid[d][hh]; const s = gsus[d] && gsus[d][hh];
+          return off ? '<span class="cell off"></span>' : m ? `<span class="cell af" data-cell="${d}|${hh}" title="Open ${d} ${pad(hh)}:00 in review">${Math.round(m)}</span>` : s ? `<span class="cell sus" data-goev="${evIndex(s)}" title="Unreviewed AF suspect">?</span>` : '<span class="cell"></span>'; }).join('')}`).join('')}
+          <span></span>${[0,6,12,18,23].map(h => `<span class="mono muted" style="grid-column:${h+2} / span 1">${pad(h)}</span>`).join('')}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">
+        <div class="box" style="padding:14px 16px">
+          <div class="label" style="color:var(--ink)">Where · AF versus activity</div>
+          <div class="legend" style="margin:10px 0 4px;justify-content:flex-start"><span><i style="background:#9a9a94"></i>Share of recorded time</span><span><i style="background:#f04e2a"></i>Share of AF time</span></div>
+          ${where.map(w => `<div class="hbar"><span class="label">${ACT_NAME[w.a]}</span><div><div class="hb" style="--w:${w.rec*.8}%"><i style="width:${w.rec*.8}%"></i><span>${Math.round(w.rec)} %</span></div><div class="hb af" style="--w:${w.af*.8}%"><i style="width:${w.af*.8}%"></i><span>${Math.round(w.af)} %</span></div></div></div>`).join('')}
+          <p style="margin:18px 0 0;border-top:1px solid var(--line);padding-top:12px">${af.length ? `${activeAf} % of AF time falls in the ${activeRec} % of the recording spent walking or in physical work.` : 'No confirmed AF yet.'}</p>
+        </div>
+        <div class="box" style="padding:14px 16px">
+          <div class="label" style="color:var(--ink)">Symptoms · patient notes versus rhythm</div>
+          ${sym.map(s => `<div class="sym">${ico('i-quote')}<div><b>${esc(s.n.short === 'Dizzy' ? 'Dizzy, heart racing' : s.n.short === 'Chest tight' ? 'Chest tightness' : s.n.short)}</b><span>${fDay(s.n.h)} ${fHM(s.n.h)} · ${ACT_NAME[actAt(s.n.h)].toLowerCase()}</span></div>${s.af ? '<span class="tag accent">AF</span>' : s.sus ? '<span class="tag soft">Unreviewed</span>' : '<span class="tag">Sinus rhythm</span>'}</div>`).join('')}
+          <p style="margin:12px 0 0">${match} of ${sym.length} noted symptoms coincide with AF. ${noNote} of ${af.length} AF episodes had no note.</p>
+        </div>
+      </div>
+    </div>
+    <div class="side wide">
+      <div style="display:flex;align-items:baseline"><span class="h2">journal.</span><span class="label" style="margin-left:auto">${J.saved ? 'Saved ' + J.saved : 'Draft · autosaved 09:58'}</span></div>
+      <div class="jf"><div class="label">Anamnesis</div><textarea class="field flat" id="j-anam">${esc(J.anam)}</textarea></div>
+      <div class="jf" data-anno="03B"><div class="label">Objective findings <span class="tag ${J.findingsEdited?'':'grey'}" id="f-tag">${J.findingsEdited ? 'Edited by you' : 'Drafted from data · edit'}</span></div><textarea class="field flat" id="j-find">${esc(findings)}</textarea></div>
+      <div class="jf"><div class="label">Tentative diagnosis</div>
+        <div class="sel ${J.dx?'':'empty'}">${J.dx ? `${esc(DX.find(d=>d.code===J.dx).name)}<span class="code">${J.dx} ▾</span>` : 'Choose a diagnosis <span class="code">▾</span>'}
+          <select id="j-dx"><option value="">Choose a diagnosis</option>${DX.map(d => `<option value="${d.code}" ${J.dx===d.code?'selected':''}>${d.name} · ${d.code}</option>`).join('')}</select></div>
+        ${!J.dx && af.length ? '<div class="small" style="margin-top:6px">Suggested from the confirmed events: Paroxysmal atrial fibrillation · I48.0</div>' : ''}</div>
+      <div class="jf"><div class="label">Treatment and plan</div><textarea class="field flat" id="j-plan">${esc(J.plan)}</textarea></div>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:18px;flex-wrap:wrap" data-anno="03C">
+        <button class="btn accent" id="j-save" ${canSave && !J.saved ? '' : 'disabled'} title="${canSave ? 'Writes to the hospital journal system' : 'Choose a diagnosis and review all AF-suspect events first'}">${J.saved ? 'Saved ' + J.saved : 'Save to journal'} ${J.saved ? '' : ico('i-arrow')}</button>
+        <button class="btn ghost" id="j-prep">Prepare consultation</button>
+        ${J.err ? `<span class="small acc" style="flex-basis:100%">${J.err}</span>` : !canSave ? `<span class="small" style="flex-basis:100%">${!J.dx ? 'Choose a diagnosis' : ''}${!J.dx && sus.length ? ' and ' : ''}${sus.length ? 'review the remaining AF-suspect events' : ''} to enable saving.</span>` : ''}
+      </div>
+      <div class="ext" style="margin-top:14px"><i></i>External · hospital journal system</div>
+    </div>
+  </div>`;
+}
+function bindSummary(){
+  const J = S.journal;
+  $('#j-anam').oninput = e => J.anam = e.target.value; $('#j-plan').oninput = e => J.plan = e.target.value;
+  $('#j-find').oninput = e => { J.findings = e.target.value; if (!J.findingsEdited) { J.findingsEdited = true; const t = $('#f-tag'); t.textContent = 'Edited by you'; t.classList.remove('grey'); } };
+  $('#j-dx').onchange = e => { J.dx = e.target.value || null; render(); };
+  document.querySelectorAll('[data-cell]').forEach(c => c.onclick = () => { const [d, hh] = c.dataset.cell.split('|'); const e = afEvents().find(e => { const x = hDate(e.h); return DAYS[x.getDay()] + ' ' + x.getDate() === d && x.getHours() === +hh; }); openEvent(evIndex(e)); go('review'); });
+  document.querySelectorAll('[data-goev]').forEach(c => c.onclick = () => { openEvent(+c.dataset.goev); go('review'); });
+  $('#j-save').onclick = () => { const b = $('#j-save'); b.disabled = true; b.textContent = 'Saving…'; J.err = null;
+    setTimeout(() => { if (S.journalOffline) { J.err = 'The journal system did not answer. Your draft is kept here · try again.'; } else { J.saved = '10:02'; } render(); if (!J.err) toast('Written to the hospital journal · 10:02'); }, 900); };
+  $('#j-prep').onclick = () => go('consult');
+}
+
+/* =========================================================
+   screen 04 · consult
+   ========================================================= */
+function rConsult(){
+  const af = afEvents(); const tot = Math.round(afMinutes()); const lon = af.length ? Math.round(Math.max(...af.map(e=>e.dur))/60) : 0;
+  const act = af.filter(e => ['walk','active'].includes(actAt(e.h))).length; const match = S.ptNotes.filter(n => af.some(e => Math.abs(e.h-n.h)*60 <= 10)).length;
+  const fromRev = S.questions.filter(q => q.src).length; const J = S.journal;
+  const night = ACT.filter(s => s[2]==='sleep');
+  return `<div class="screen">
+    <div class="main">
+      <div class="crumb">004 / Prepare patient talk</div>
+      <div class="display">consultation.</div>
+      <div class="ink2" style="margin-top:8px">John Doe · today 10:15 · room 3</div>
+      <div class="ovp">
+        <div class="ovp-h"><span class="label" style="color:var(--ink)">Overview for the patient · plain language</span><div class="legend"><span><i style="background:#f04e2a"></i>Episode of uneven heartbeat</span><span><i style="background:#ebebe7"></i>Night</span></div></div>
+        <div class="kpis">
+          <div class="kpi"><div class="num">${af.length}</div><span>episode${af.length===1?'':'s'} in three days</span></div>
+          <div class="kpi"><div class="num">${tot} min</div><span>in total, longest ${lon} min</span></div>
+          <div class="kpi"><div class="num">${act} of ${af.length}</div><span>while walking or working</span></div>
+          <div class="kpi"><div class="num">${match} of ${S.ptNotes.length}</div><span>of your notes match an episode</span></div>
+        </div>
+        <div class="tl">${night.map(s => `<div class="night" style="left:${s[0]/H*100}%;width:${(s[1]-s[0])/H*100}%"></div>`).join('')}${af.map(e => `<div class="ep" style="left:${e.h/H*100}%;width:${e.dur/3600/H*100}%" title="${fDay(e.h)} ${fHM(e.h)} · ${fDur(e.dur)}"></div>`).join('')}</div>
+        <div class="tl-d">${[[0,'Thu'],[14,'Fri'],[38,'Sat'],[62,'Sun']].map(([h,d]) => `<span class="label" style="color:var(--ink);position:relative;left:0">${d}</span>`).join('')}</div>
+      </div>
+      <div class="label" style="margin-top:22px;color:var(--ink)">Material to show · ticked items appear in the patient view</div>
+      <div class="mat" data-anno="04A">${S.material.map(m => `<div class="mcard ${m.on?'':'off'}" data-mat="${m.id}"><div class="h"><span class="cb ${m.on?'on':''}">${ico('i-check')}</span>${m.title} · ${fDay(m.at)} ${fHM(m.at)}</div><canvas data-ecg="${m.mode}" data-at="${m.at}"></canvas><div class="ink2">${m.text}</div></div>`).join('')}</div>
+    </div>
+    <div class="side">
+      <div style="display:flex;align-items:baseline"><span class="h2">questions.</span><span class="label" style="margin-left:auto">${fromRev} from review · ${S.questions.length-fromRev} added</span></div>
+      <div id="ql" style="margin-top:4px">${S.questions.map((q,i) => `<div class="q ${q.on?'':'off'}" data-q="${i}"><span class="cb ${q.on?'on':''}">${ico('i-check')}</span><div><p>${esc(q.text)}</p>${q.src ? `<span class="tag grey">${esc(q.src)}</span>` : ''}</div></div>`).join('')}</div>
+      <div class="addq" data-anno="04B"><span style="font-size:16px;line-height:1">+</span><input id="addq" placeholder="Add question"></div>
+      <div class="dx"><div class="label">Tentative diagnosis</div><b>${J.dx ? esc(DX.find(d=>d.code===J.dx).name) + ' · ' + J.dx : '<span class="muted">Not chosen yet · set it on 03 Summary</span>'}</b></div>
+      <div style="display:flex;gap:8px;margin-top:18px"><button class="btn" id="pv-open" data-anno="04C">Open patient view ${ico('i-arrow')}</button><button class="btn ghost" id="print" title="Later release · button only">Print summary</button></div>
+      <div class="ext" style="margin-top:14px"><i></i>External · second screen or turned towards the patient</div>
+    </div>
+  </div>`;
+}
+function bindConsult(){
+  document.querySelectorAll('canvas[data-ecg]').forEach(cv => drawECG(cv, +cv.dataset.at, 10, cv.dataset.ecg));
+  document.querySelectorAll('[data-mat] .h').forEach(h => h.onclick = () => { const m = S.material.find(m => m.id === h.parentElement.dataset.mat); if (m.on && S.material.filter(x => x.on).length === 1) { h.parentElement.classList.add('shake'); setTimeout(() => h.parentElement.classList.remove('shake'), 400); toast('At least one item must stay ticked'); return; } m.on = !m.on; render(); });
+  document.querySelectorAll('[data-q]').forEach(q => q.onclick = () => { const x = S.questions[+q.dataset.q]; x.on = !x.on; render(); });
+  const inp = $('#addq'); inp.onkeydown = e => { if (e.key === 'Enter' && inp.value.trim()) { S.questions.push({text:inp.value.trim(), src:null, on:true}); render(); $('#addq').focus(); } };
+  $('#pv-open').onclick = openPatientView;
+  $('#print').onclick = () => { toast('Print summary is a later release · opening the browser print dialog as a stand-in'); setTimeout(() => window.print(), 600); };
+}
+function openPatientView(){
+  const af = afEvents(); const tot = Math.round(afMinutes()); const lon = af.length ? Math.round(Math.max(...af.map(e=>e.dur))/60) : 0;
+  const act = af.filter(e => ['walk','active'].includes(actAt(e.h))).length; const match = S.ptNotes.filter(n => af.some(e => Math.abs(e.h-n.h)*60 <= 10)).length;
+  const pv = $('#pv'); pv.innerHTML = `<button class="btn ghost close" id="pv-close">Close · Esc</button><div class="in">
+    <div class="logo">reafel.</div>
+    <div class="h1" style="margin-top:40px">Your heart over three days, John.</div>
+    <p style="font-size:18px;line-height:1.5;color:var(--ink-2);max-width:620px">We recorded your heartbeat from Thursday to Sunday. Most of the time it was steady. A few times it became fast and uneven. Here is what we found.</p>
+    <div class="kpis" style="margin-top:40px">
+      <div class="kpi"><div class="num">${af.length}</div><span>episode${af.length===1?'':'s'} of uneven heartbeat</span></div>
+      <div class="kpi"><div class="num">${tot} min</div><span>in total, longest ${lon} min</span></div>
+      <div class="kpi"><div class="num">${act} of ${af.length}</div><span>while walking or working</span></div>
+      <div class="kpi"><div class="num">${match} of ${S.ptNotes.length}</div><span>of your notes matched an episode</span></div>
+    </div>
+    <div class="tl" style="height:56px;margin-top:40px">${ACT.filter(s=>s[2]==='sleep').map(s => `<div class="night" style="left:${s[0]/H*100}%;width:${(s[1]-s[0])/H*100}%"></div>`).join('')}${af.map(e => `<div class="ep" style="left:${e.h/H*100}%;width:${e.dur/3600/H*100}%"></div>`).join('')}</div>
+    <div class="tl-d">${['Thu','Fri','Sat','Sun'].map(d => `<span class="label" style="color:var(--ink)">${d}</span>`).join('')}</div>
+    <div class="mat">${S.material.filter(m => m.on).map(m => `<div class="mcard"><div class="h">${m.title}</div><canvas data-ecg="${m.mode}" data-at="${m.at}" style="height:120px"></canvas><div class="ink2" style="font-size:15px">${m.text}</div></div>`).join('')}</div>
+    <div class="small" style="margin-top:48px">Patient view · shows only the plain-language overview and the ticked material. No journal text, no other patients.</div></div>`;
+  pv.classList.add('show'); pv.querySelectorAll('canvas[data-ecg]').forEach(cv => drawECG(cv, +cv.dataset.at, 10, cv.dataset.ecg));
+  $('#pv-close').onclick = () => pv.classList.remove('show');
+}
+
+/* =========================================================
+   annotations + prototype controls
+   ========================================================= */
+const ANNO = {
+  patients: {title:'01 Locate patient', items:[
+    {k:'A', id:'01A', t:'Search by CPR', trig:'Typing in the search field, or ⌘K / Ctrl+K from anywhere.', rule:'Matches name or CPR digits from the first character. The last four CPR digits stay masked in the list.', fb:'Table filters while typing and the count under the title updates. No match shows “No patient found, check the CPR no.”'},
+    {k:'B', id:'01B', t:'Open next appointment', trig:'Click the orange appointment block or the arrow on the selected row.', rule:'Opens the review at the first unreviewed event, not at the start of the recording.', fb:'Block darkens on press. Review opens with that event selected in the list and on the timeline.'},
+    {k:'C', id:'01C', t:'Sort a column', trig:'Click a column header.', rule:'First click sorts ascending, second descending. One sort at a time. Default is consultation time.', fb:'Arrow appears on the active header and rows reorder in place.'}]},
+  review: {title:'02 Review and classify · 02b Create event', items:[
+    {k:'A', id:'02A', t:'Move the window', trig:'Drag the outlined window on the 72 h overview, or click anywhere on it.', rule:'All lanes share one time axis. On release the window snaps to an event if one is within 2 minutes.', fb:'ECG strips redraw while dragging. The time in the ECG header follows the window.'},
+    {k:'B', id:'02B', t:'Classify an event', trig:'Click a class tag, or press 1–5. Then “Confirm and next” or Enter.', rule:'One class per event. The automatic label is only a suggestion until confirmed.', fb:'Chosen tag fills. On confirm the row tag changes, “Reviewed” goes up by one and the next unreviewed event opens.'},
+    {k:'C', id:'02C', t:'Ask patient', trig:'Click “Ask patient” on an event.', rule:'Creates a question linked to this event. Does not block confirming the event.', fb:'Button changes to “Added to questions”. The question shows up on screen 04 with the tag “From event 06”.'},
+    {k:'A', id:'02bA', t:'Create an event by dragging', trig:'Press and drag across an ECG strip.', rule:'Minimum length 0.5 s. Esc cancels.', fb:'Shaded range with a live duration label while dragging. The popover opens on release.'},
+    {k:'B', id:'02bB', t:'Save the new event', trig:'“Save event” or Enter in the popover.', rule:'A class is required, the note is optional.', fb:'Popover closes. A ring marker appears in the “Your notes” lane and a new row is added to the event list.'},
+    {k:'C', id:'02bC', x:true, t:'External · patient note arrives', trig:'The patient saves a note in the phone app (outside this tool). Use “Simulate patient note” in the prototype controls.', rule:'Notes are placed by their timestamp and never edited by the HCP.', fb:'A black dot appears in the “Patient notes” lane and the nearest event shows the quote.'}]},
+  summary: {title:'03 Summarise and diagnose', items:[
+    {k:'A', id:'03A', t:'Open an hour', trig:'Click a coloured cell in the hour grid.', rule:'Only cells with AF minutes are clickable. Grey cells were not recorded.', fb:'Goes to the review screen with the window placed on that hour.'},
+    {k:'B', id:'03B', t:'Edit drafted findings', trig:'Click into “Objective findings”.', rule:'The draft is built from confirmed events only. Once edited it is never overwritten.', fb:'Tag changes from “Drafted from data · edit” to “Edited by you”.'},
+    {k:'C', id:'03C', x:true, t:'External · save to journal', trig:'Click “Save to journal”.', rule:'Disabled until a diagnosis is chosen and all AF-suspect events are reviewed. Writes to the hospital journal system.', fb:'Button shows “Saved 10:02”. If the journal system does not answer (toggle in prototype controls), the draft is kept and an error is shown next to the button.'}]},
+  consult: {title:'04 Prepare patient talk', items:[
+    {k:'A', id:'04A', t:'Choose material', trig:'Tick or untick a material card.', rule:'At least one item must stay ticked.', fb:'Unticked cards fade. The patient view shows only ticked items.'},
+    {k:'B', id:'04B', t:'Add a question', trig:'Click “Add question”, type, press Enter.', rule:'Questions from the review keep a link back to their event.', fb:'New row appears at the end of the list and the counter in the header updates.'},
+    {k:'C', id:'04C', x:true, t:'External · open patient view', trig:'Click “Open patient view”.', rule:'Shows only plain-language overview and ticked material. Journal text and other patients are never shown.', fb:'A full-screen view opens, ready to turn towards the patient or send to a second screen.'}]},
+};
+function rDrawer(){
+  const d = $('#drawer'); if (!S.annoOpen && !S.demoOpen) { d.classList.remove('show'); return; } d.classList.add('show');
+  if (S.annoOpen) { const a = ANNO[S.screen]; d.innerHTML = `<div class="label">Microinteractions</div><h4>${a.title}</h4><p class="small" style="margin:8px 0 0">Trigger · rules · feedback, as annotated in the Figma storyboard. “Show me” highlights the element on screen.</p>
+    ${a.items.map(i => `<div class="an"><div class="k ${i.x?'x':''}"><i>${i.k}</i>${i.t}</div><dl><dt>Trigger</dt><dd>${i.trig}</dd><dt>Rules</dt><dd>${i.rule}</dd><dt>Feedback</dt><dd>${i.fb}</dd></dl><button class="show" data-hl="${i.id}">Show me</button></div>`).join('')}`;
+    d.querySelectorAll('[data-hl]').forEach(b => b.onclick = () => { const el = document.querySelector(`[data-anno="${b.dataset.hl}"]`); if (!el) { toast('This element is not on screen right now'); return; } el.scrollIntoView({block:'center', behavior:'smooth'}); el.classList.add('hl'); setTimeout(() => el.classList.remove('hl'), 3600); }); }
+  else { const rev = S.events.filter(e => e.reviewed).length; d.innerHTML = `<div class="label">Prototype</div><h4>Controls for testing</h4><p class="small" style="margin:8px 0 0">Everything here is synthetic data for John Doe. Nothing is sent anywhere. Not a medical device.</p>
+    <div class="dc">
+      <div class="small">State · ${rev} of ${S.events.length} events reviewed · ${S.questions.length} questions · journal ${S.journal.saved ? 'saved' : 'draft'}</div>
+      <button class="btn ghost" id="d-ff">Fast-forward · review remaining events with the auto label</button>
+      <button class="btn ghost" id="d-note">Simulate a patient note arriving (external)</button>
+      <label><span class="cb ${S.journalOffline?'on':''}" id="d-off">${ico('i-check')}</span>Simulate the journal system being offline</label>
+      <button class="btn" id="d-reset">Reset prototype</button>
+      <div class="small" style="margin-top:8px">Keyboard · ⌘K search · 1–5 classify · Enter confirm · Esc cancel · Ctrl+Enter confirm from the note field</div>
+      <div class="small">Scenario · Dr A. Holm, cardiology outpatient, Monday 5 Oct 2026, 10:00. Next consultation John Doe 10:15.</div>
+    </div>`;
+    $('#d-ff').onclick = () => { S.events.forEach(e => { if (!e.reviewed) { e.reviewed = true; e.cls = e.auto === 'AF' ? 'AF' : e.auto === 'Ectopic' ? 'Ectopic' : 'Sinus'; e.note = e.note || 'Agreed with the automatic label.'; } }); if (S.screen === 'review') openEvent(S.sel); render(); toast('All events reviewed with their automatic label'); };
+    $('#d-note').onclick = () => { if (S.noteArrived) { toast('Already arrived · reset to replay'); return; } S.noteArrived = true; S.ptNotes.push({h:49.12, text:'Short of breath on the way up the hill.', short:'Breathless'}); render(); toast('Patient note arrived · Sat 11:07 “Short of breath on the way up the hill.”'); };
+    $('#d-off').onclick = () => { S.journalOffline = !S.journalOffline; rDrawer(); };
+    $('#d-reset').onclick = () => { S = initialState(); location.hash = '#/patients'; render(); toast('Prototype reset'); }; }
+}
+
+/* =========================================================
+   render + global events
+   ========================================================= */
+function render(){
+  const T = [['patients','01 Patients'],['review','02 Review'],['summary','03 Summary'],['consult','04 Consult']];
+  $('#tabs').innerHTML = T.map(([k,t]) => `<button class="tab ${S.screen===k?'on':''}" data-go="${k}"><i></i>${t}</button>`).join('');
+  document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go));
+  const app = $('#app');
+  if (S.screen === 'patients') { app.innerHTML = rPatients(); rPatientTable(); bindPatients(); }
+  else if (S.screen === 'review') { app.innerHTML = rReview(); bindReview(); }
+  else if (S.screen === 'summary') { app.innerHTML = rSummary(); bindSummary(); }
+  else { app.innerHTML = rConsult(); bindConsult(); }
+  rDrawer();
+}
+function bindPatients(){
+  const q = $('#q'); q.oninput = () => { S.search = q.value; rPatientTable(); bindTable(); };
+  bindTable();
+}
+function bindTable(){
+  document.querySelectorAll('[data-filter]').forEach(b => b.onclick = () => { S.filter = b.dataset.filter; rPatientTable(); bindTable(); });
+  document.querySelectorAll('[data-sort]').forEach(h => h.onclick = () => { const k = h.dataset.sort; S.sort = S.sort.key === k ? {key:k, dir:-S.sort.dir} : {key:k, dir:1}; rPatientTable(); bindTable(); });
+  document.querySelectorAll('[data-open]').forEach(r => r.onclick = ev => { ev.stopPropagation(); const p = PATIENTS.find(p => p.id === r.dataset.open);
+    if (!p.loaded) { S.selPt = p.id; rPatientTable(); bindTable(); toast(`Prototype · only John Doe's recording is loaded. ${p.name} would open the same way.`); return; }
+    const i = S.events.findIndex(e => !e.reviewed); openEvent(i >= 0 ? i : 0); go('review'); });
+}
+document.addEventListener('keydown', e => {
+  const tag = (e.target.tagName || '').toLowerCase(); const typing = tag === 'input' || tag === 'textarea' || tag === 'select';
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); if (S.screen !== 'patients') go('patients'); $('#q').focus(); return; }
+  if (e.key === 'Escape') { if ($('#pv').classList.contains('show')) $('#pv').classList.remove('show'); const p = $('.pop'); if (p) { p.remove(); document.querySelectorAll('.mark.new').forEach(m => m.remove()); } if (typing) e.target.blur(); return; }
+  if (S.screen !== 'review' || $('.pop')) return;
+  if (!typing && /^[1-5]$/.test(e.key)) { S.draftCls = CLASSES[+e.key - 1]; document.querySelectorAll('[data-cls]').forEach(x => x.classList.toggle('on', x.dataset.cls === S.draftCls)); }
+  if (!typing && e.key === 'Enter') confirmEvent();
+});
+$('#b-anno').onclick = () => { S.annoOpen = !S.annoOpen; S.demoOpen = false; rDrawer(); };
+$('#b-demo').onclick = () => { S.demoOpen = !S.demoOpen; S.annoOpen = false; rDrawer(); };
+window.addEventListener('hashchange', () => { const s = location.hash.replace('#/',''); if (ANNO[s] && s !== S.screen) { S.screen = s; render(); } });
+window.addEventListener('resize', () => { if (S.screen === 'review') { drawOverview(); drawStrips(); } if (S.screen === 'consult') document.querySelectorAll('canvas[data-ecg]').forEach(cv => drawECG(cv, +cv.dataset.at, 10, cv.dataset.ecg)); });
+const start = location.hash.replace('#/',''); if (ANNO[start]) S.screen = start;
+render();
+if (document.fonts) document.fonts.ready.then(render);
+</script>
+</body>
+</html>

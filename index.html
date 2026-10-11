@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>reafel · See the rhythm and the reason</title>
+<meta name="description" content="reafel lines up 72 hours of ECG with what your patient was doing and feeling, so cardiologists can review, diagnose and prepare the consultation in one sitting. Student concept, DTU 02810.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@600&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --paper:#f3f3f1; --surface:#fff; --ink:#111; --ink-2:#55554f; --mute:#9a9a94;
+    --line:#dadad5; --line-soft:#ebebe7; --accent:#f04e2a; --accent-soft:#fce1da; --accent-ink:#c93a1b;
+    --display:'Outfit',sans-serif; --sans:'Geist',system-ui,sans-serif; --mono:'Geist Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--paper);color:var(--ink);font:400 16px/1.5 var(--sans);-webkit-font-smoothing:antialiased}
+  a{color:inherit;text-decoration:none}
+  button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+  .wrap{max-width:1360px;margin:0 auto;padding:0 48px}
+  @media (max-width:760px){.wrap{padding:0 20px}}
+  .label{font:500 10px/1.3 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
+  .acc{color:var(--accent)}
+  .btn{display:inline-flex;align-items:center;gap:12px;height:44px;padding:0 20px;border:1px solid var(--ink);background:var(--ink);color:#fff;font:500 10px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;transition:background .15s,transform .08s}
+  .btn:hover{background:#000} .btn:active{transform:translateY(1px)}
+  .btn.accent{background:var(--accent);border-color:var(--accent)} .btn.accent:hover{background:var(--accent-ink);border-color:var(--accent-ink)}
+  .btn.ghost{background:transparent;color:var(--ink)} .btn.ghost:hover{background:#fff}
+  .btn svg{width:13px;height:13px}
+  .dark .btn.ghost{color:#fff;border-color:#fff}
+
+  /* nav */
+  .nav{position:sticky;top:0;z-index:20;background:rgba(243,243,241,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--ink)}
+  .nav .wrap{height:64px;display:flex;align-items:center;gap:40px}
+  .logo{font:600 24px/1 var(--display);letter-spacing:-.03em}
+  .links{display:flex;gap:32px;margin-left:auto;margin-right:auto}
+  .links a{font:500 10px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2)} .links a:hover{color:var(--ink)}
+  @media (max-width:900px){.links{display:none}}
+
+  /* hero */
+  .hero{position:relative;overflow:hidden;border-bottom:1px solid var(--ink)}
+  .hero .wrap{padding-top:72px;padding-bottom:0;position:relative}
+  .hero h1{font:600 clamp(56px,9.5vw,136px)/.95 var(--display);letter-spacing:-.045em;margin:18px 0 0;max-width:12ch}
+  .hero-row{display:grid;grid-template-columns:minmax(300px,440px) 1fr;gap:48px;align-items:start;margin-top:40px}
+  .lead{font-size:18px;line-height:1.5;color:var(--ink-2);margin:0}
+  .cta{display:flex;gap:10px;margin-top:40px;flex-wrap:wrap}
+  .foot{margin:120px 0 36px}
+  .shot{position:relative;min-height:520px}
+  .shot .blob{position:absolute;right:-48px;top:110px;bottom:0;width:62%;background:var(--accent)}
+  .frame{position:absolute;left:0;top:0;width:100%;aspect-ratio:1440/900;background:#fff;border:1px solid var(--ink);box-shadow:0 30px 80px rgba(0,0,0,.18);overflow:hidden}
+  .frame iframe{width:1440px;height:900px;border:0;transform-origin:0 0;pointer-events:none}
+  .frame .tap{position:absolute;inset:0;display:grid;place-items:end start;padding:16px;opacity:0;transition:.2s;background:linear-gradient(transparent 60%,rgba(0,0,0,.35))}
+  .frame:hover .tap{opacity:1}
+  .phone{position:absolute;right:8%;bottom:-28px;width:220px;aspect-ratio:390/844;background:#000;border-radius:28px;padding:8px;box-shadow:0 30px 60px rgba(0,0,0,.3)}
+  .phone .scr{background:var(--paper);border-radius:22px;height:100%;overflow:hidden;padding:14px 12px;font-size:7px}
+  .phone .lg{font:600 11px/1 var(--display);letter-spacing:-.03em}
+  .phone .t{font:600 18px/1 var(--display);letter-spacing:-.03em;margin-top:8px}
+  .phone .lab{font:500 5px/1.3 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
+  .phone .box{background:#fff;border:1px solid var(--ink);padding:6px;margin-top:8px}
+  .phone .ecg{height:46px;margin-top:4px;background:repeating-linear-gradient(90deg,#fbe4dd 0 1px,transparent 1px 4px),repeating-linear-gradient(0deg,#fbe4dd 0 1px,transparent 1px 4px),#fff;position:relative;overflow:hidden}
+  .phone .ecg svg{position:absolute;inset:0;width:100%;height:100%}
+  .phone .chips{display:flex;gap:3px;margin-top:8px} .phone .chips span{border:1px solid var(--ink);padding:2px 4px;font:500 5px/1 var(--mono);letter-spacing:.08em}
+  .phone .chips span.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .phone .b{display:inline-block;background:var(--accent);color:#fff;font:500 5px/1 var(--mono);letter-spacing:.1em;padding:6px 8px;margin-top:8px}
+  @media (max-width:1000px){.hero-row{grid-template-columns:1fr}.shot{min-height:0;margin-top:24px}.frame{position:relative}.phone{display:none}.shot .blob{display:none}}
+
+  /* sections */
+  .sec{padding:96px 0;border-bottom:1px solid var(--ink)}
+  .sec h2{font:600 clamp(36px,4.2vw,56px)/1.05 var(--display);letter-spacing:-.03em;margin:12px 0 0;max-width:14ch}
+  .cols{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:40px}
+  .cols h3{font:600 26px/1.15 var(--display);letter-spacing:-.02em;margin:10px 0 12px}
+  .cols p{margin:0;color:var(--ink-2);font-size:17px;line-height:1.5}
+  @media (max-width:1000px){.cols{grid-template-columns:1fr 1fr}} @media (max-width:640px){.cols{grid-template-columns:1fr}}
+  .dark{background:var(--ink);color:#fff;border-bottom:0}
+  .dark .cols{grid-template-columns:repeat(4,1fr);gap:32px;margin-top:64px}
+  @media (max-width:1000px){.dark .cols{grid-template-columns:1fr 1fr}} @media (max-width:640px){.dark .cols{grid-template-columns:1fr}}
+  .dark .cols > div{border-top:1px solid var(--accent);padding-top:22px}
+  .dark .cols h3{font-size:24px;color:#fff} .dark .cols p{color:#bdbdb7;font-size:15px}
+  .dark .label{color:var(--accent)}
+
+  /* how */
+  .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:48px}
+  @media (max-width:1000px){.steps{grid-template-columns:1fr 1fr}} @media (max-width:640px){.steps{grid-template-columns:1fr}}
+  .step{background:#fff;border:1px solid var(--ink);padding:22px 22px 24px;display:flex;flex-direction:column;gap:10px;min-height:230px;transition:transform .15s}
+  .step:hover{transform:translateY(-3px)}
+  .step .n{font:600 40px/1 var(--display);letter-spacing:-.03em;color:var(--accent)}
+  .step h3{font:600 20px/1.2 var(--display);letter-spacing:-.01em;margin:0}
+  .step p{margin:0;color:var(--ink-2);font-size:15px;line-height:1.5;flex:1}
+  .step a{font:500 10px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;text-decoration:underline;text-underline-offset:3px}
+
+  /* patients */
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center}
+  @media (max-width:900px){.split{grid-template-columns:1fr}}
+  .split p{font-size:17px;color:var(--ink-2);line-height:1.55}
+  .patch{background:#fff;border:1px solid var(--ink);padding:32px}
+  .patch ul{list-style:none;margin:0;padding:0;display:grid;gap:14px}
+  .patch li{display:flex;gap:14px;align-items:flex-start;font-size:15px;line-height:1.45}
+  .patch li i{width:22px;height:22px;flex:0 0 22px;background:var(--accent);display:grid;place-items:center;color:#fff;font:500 10px/1 var(--mono)}
+
+  /* metrics */
+  .metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:48px}
+  @media (max-width:800px){.metrics{grid-template-columns:1fr}}
+  .metric{background:#fff;border:1px solid var(--line);padding:24px}
+  .metric b{display:block;font:600 44px/1 var(--display);letter-spacing:-.03em;margin:8px 0 10px}
+  .metric p{margin:0;color:var(--ink-2);font-size:14px;line-height:1.5}
+
+  /* cta footer */
+  .end{padding:96px 0 48px}
+  .end .wrap{display:grid;grid-template-columns:1fr 440px;gap:48px;align-items:end}
+  @media (max-width:900px){.end .wrap{grid-template-columns:1fr}}
+  .end .big{font:600 clamp(96px,16vw,220px)/.8 var(--display);letter-spacing:-.05em}
+  .end .tag{margin-top:24px}
+  .cta-box{background:var(--accent);color:#fff;padding:36px}
+  .cta-box h3{font:600 30px/1.15 var(--display);letter-spacing:-.02em;margin:0 0 24px}
+  .cta-box .btn{background:var(--ink);border-color:var(--ink)}
+  .legal{margin-top:64px;padding-top:20px;border-top:1px solid var(--line);display:flex;gap:24px;flex-wrap:wrap;justify-content:space-between}
+  .legal a{text-decoration:underline;text-underline-offset:3px}
+
+  /* modal */
+  .modal{position:fixed;inset:0;background:rgba(17,17,17,.6);display:none;align-items:center;justify-content:center;z-index:50;padding:20px}
+  .modal.show{display:flex}
+  .modal form{background:#fff;border:1px solid var(--ink);width:min(520px,100%);padding:32px}
+  .modal h3{font:600 28px/1.1 var(--display);letter-spacing:-.02em;margin:0 0 6px}
+  .modal p{margin:0 0 20px;color:var(--ink-2)}
+  .f{display:grid;gap:6px;margin-bottom:14px}
+  .f input,.f select{height:44px;border:1px solid var(--line);background:var(--paper);padding:0 12px;font:inherit}
+  .f input:focus,.f select:focus{outline:2px solid var(--ink);outline-offset:-1px;background:#fff}
+  .ok{display:none;text-align:center;padding:12px 0 0}
+  .ok b{font:600 28px/1.1 var(--display);letter-spacing:-.02em;display:block;margin-bottom:8px}
+  .toast{position:fixed;left:50%;bottom:32px;transform:translateX(-50%) translateY(10px);background:var(--ink);color:#fff;padding:12px 18px;font:500 11px/1.3 var(--mono);letter-spacing:.04em;opacity:0;transition:.2s;z-index:60;pointer-events:none}
+  .toast.show{opacity:1;transform:translateX(-50%)}
+  .reveal{opacity:0;transform:translateY(16px);transition:opacity .6s,transform .6s}
+  .reveal.in{opacity:1;transform:none}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute"><symbol id="arrow" viewBox="0 0 12 12"><path d="M1 6h9M6.5 2.5 10 6l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.6"/></symbol></svg>
+
+<header class="nav"><div class="wrap">
+  <a class="logo" href="#top">reafel.</a>
+  <nav class="links"><a href="#product">Product</a><a href="#clinics">For clinics</a><a href="#patients">For patients</a><a href="#study">About the study</a></nav>
+  <button class="btn" data-demo>Book a demo <svg><use href="#arrow"/></svg></button>
+</div></header>
+
+<section class="hero" id="top"><div class="wrap">
+  <div class="label acc">For cardiology clinics diagnosing atrial fibrillation</div>
+  <h1>See the rhythm and the reason.</h1>
+  <div class="hero-row">
+    <div>
+      <p class="lead">reafel lines up 72 hours of ECG with what your patient was doing and feeling, so you can review, diagnose and prepare the consultation in one sitting.</p>
+      <div class="cta"><button class="btn accent" data-demo>Book a demo <svg><use href="#arrow"/></svg></button><a class="btn ghost" href="#product">See how it works</a></div>
+      <div class="label foot">001 — Student concept · DTU 02810 · not a medical device</div>
+    </div>
+    <div class="shot">
+      <div class="blob"></div>
+      <a class="frame" href="prototype.html#/review" target="_blank" title="Open the interactive prototype">
+        <iframe src="prototype.html#/review" tabindex="-1" loading="lazy" title="reafel review screen"></iframe>
+        <span class="tap"><span class="btn">Open the live prototype <svg><use href="#arrow"/></svg></span></span>
+      </a>
+      <div class="phone"><div class="scr">
+        <div style="display:flex;justify-content:space-between;align-items:center"><span class="lg">reafel.</span><span class="lab">Dr. A. Holm</span></div>
+        <div class="lab" style="color:var(--accent);margin-top:10px">002 / Review and classify</div>
+        <div class="t">John Doe</div>
+        <div style="color:var(--ink-2);margin-top:2px">42 y · AF burden 0.8 % · 5 of 14 reviewed</div>
+        <div class="box"><div class="lab" style="color:var(--ink)">Fri 09:41:58 · Lead II</div>
+          <div class="ecg"><svg viewBox="0 0 200 46" preserveAspectRatio="none"><path d="M0 30 h12 l2-3 2 3 h6 l2-14 2 20 2-9 h8 l3-4 3 4 h10 l2-3 2 3 h6 l2-14 2 20 2-9 h8 l3-4 3 4 h8 l1-12 1 16 1-6 h4 l1-10 1 14 1-6 h5 l1-12 1 17 1-7 h6 l1-11 1 15 1-6 h4 l1-10 1 14 1-5 h5 l1-12 1 16 1-6 h6 l1-10 1 14 1-6 h3 l1-12 1 17 1-7 h6 l1-11 1 15 1-6 h8" fill="none" stroke="#111" stroke-width="1"/><rect x="92" y="0" width="1" height="46" fill="#f04e2a"/></svg></div></div>
+        <div class="lab" style="margin-top:10px;color:var(--ink)">Event 06 of 14 · 14 min</div>
+        <div style="background:var(--line-soft);padding:6px;margin-top:5px;font-size:7px">“Felt dizzy and heart racing on the scaffold.”</div>
+        <div class="chips"><span class="on">AF</span><span>Flutter</span><span>Ectopic</span><span>Sinus</span><span>Artefact</span></div>
+        <span class="b">Confirm and next →</span>
+      </div></div>
+    </div>
+  </div>
+</div></section>
+
+<section class="sec" id="clinics"><div class="wrap">
+  <div class="cols">
+    <div class="reveal"><div class="label">Today</div><h2 style="font-size:clamp(36px,3.6vw,48px)">Paper diary. Separate ECG.</h2></div>
+    <div class="reveal"><div class="label acc">01 / For the doctor</div><h3>Two sources to line up</h3><p>Symptoms and activities are on paper, the ECG is on a screen. Matching them by hand is slow and easy to get wrong.</p></div>
+    <div class="reveal"><div class="label acc">02 / For the patient</div><h3>Bulky and uncertain</h3><p>A Holter monitor is heavy to wear, the diary is a notebook and a pen, and it is hard to tell whether it is recording.</p></div>
+    <div class="reveal"><div class="label acc">03 / With reafel</div><h3>One timeline</h3><p>A small patch records ECG and movement. The phone takes a note in two taps. Everything arrives already aligned.</p></div>
+  </div>
+</div></section>
+
+<section class="sec dark" id="product"><div class="wrap">
+  <div class="label">What you get</div>
+  <h2 style="color:#fff">Built around four things a heart doctor needs.</h2>
+  <div class="cols">
+    <div class="reveal"><div class="label">Saves time</div><h3>Review by event, not by hour</h3><p>Detected events are queued and pre-labelled. Confirm, correct or dismiss each one with a single key.</p></div>
+    <div class="reveal"><div class="label">Integrates</div><h3>One time axis</h3><p>ECG, activity, the patient’s notes and your own marks stay aligned, from 72 hours down to a single beat.</p></div>
+    <div class="reveal"><div class="label">Reduces risk</div><h3>You make the call</h3><p>Automatic labels are suggestions until you confirm them. Every diagnosis traces back to the strips you looked at.</p></div>
+    <div class="reveal"><div class="label">Informs</div><h3>Ready for the conversation</h3><p>Findings become a plain-language overview and a short list of questions to take into the consultation.</p></div>
+  </div>
+</div></section>
+
+<section class="sec"><div class="wrap">
+  <div class="label acc">How it works</div>
+  <h2>Four screens. One sitting.</h2>
+  <div class="steps">
+    <a class="step reveal" href="prototype.html#/patients" target="_blank"><span class="n">01</span><h3>Locate the patient</h3><p>Today’s consultations up front. Search by name or CPR number, sort by AF burden or events to review, and open at the first unreviewed event.</p><span>Try it →</span></a>
+    <a class="step reveal" href="prototype.html#/review" target="_blank"><span class="n">02</span><h3>Review and classify</h3><p>Drag a window over 72 hours of heart rate, activity and notes. Read the strip on ECG paper, confirm the label with one key, or mark a new event yourself.</p><span>Try it →</span></a>
+    <a class="step reveal" href="prototype.html#/summary" target="_blank"><span class="n">03</span><h3>Summarise and diagnose</h3><p>AF minutes per hour of day, AF against activity, symptoms against rhythm. Findings are drafted from confirmed events into the journal.</p><span>Try it →</span></a>
+    <a class="step reveal" href="prototype.html#/consult" target="_blank"><span class="n">04</span><h3>Prepare the talk</h3><p>A plain-language overview, two strips to show, and the questions you collected during review. Open the patient view on a second screen.</p><span>Try it →</span></a>
+  </div>
+</div></section>
+
+<section class="sec" id="patients"><div class="wrap">
+  <div class="split">
+    <div class="reveal">
+      <div class="label acc">For patients</div>
+      <h2>A Holter monitor whose diary fills itself in.</h2>
+      <p>No notebook, no pen, no guessing whether it is recording. A small patch on the chest records heart rhythm and movement for three days. When something feels off, the patient opens the phone app and taps once. The note lands on the same timeline the doctor reviews.</p>
+    </div>
+    <div class="patch reveal">
+      <div class="label" style="margin-bottom:18px">What the patient does</div>
+      <ul>
+        <li><i>1</i><span><b>Wear the patch</b> for 72 hours. It is small, waterproof and shows a steady light while it records.</span></li>
+        <li><i>2</i><span><b>Tap a note</b> when you feel dizzy, breathless or your heart races. Two taps, no typing needed.</span></li>
+        <li><i>3</i><span><b>Carry on as usual.</b> Walking, working and sleeping are picked up by the sensor, so you do not have to write them down.</span></li>
+        <li><i>4</i><span><b>Come to the consultation</b> and see your own three days explained in plain language.</span></li>
+      </ul>
+    </div>
+  </div>
+</div></section>
+
+<section class="sec" id="study"><div class="wrap">
+  <div class="label acc">About the study</div>
+  <h2>Built on the REAFEL data.</h2>
+  <div class="split" style="align-items:start;margin-top:12px">
+    <p style="margin:0">REAFEL, <em>Reaching the Frail Elderly Patients for Optimizing Diagnosis of Atrial Fibrillation</em>, collects single-lead ECG together with accelerometer data and patient-reported symptoms. reafel is the review tool on top of that data: activity-labelled ECG with patient notes, designed together with clinicians inside the diagnostic workflow.</p>
+    <p style="margin:0">This page and the linked prototype are a student concept from DTU course 02810. The patient data shown is synthetic. reafel is not a medical device and must not be used for diagnosis.</p>
+  </div>
+  <div class="metrics">
+    <div class="metric reveal"><div class="label">What we measure</div><b>min / 72 h</b><p>Review time per 72 h recording, from opening the patient to a saved journal draft.</p></div>
+    <div class="metric reveal"><div class="label">What we measure</div><b>% reviewed</b><p>Share of AF-suspect events reviewed before the consultation starts.</p></div>
+    <div class="metric reveal"><div class="label">What we measure</div><b>% with context</b><p>Share of events that carry an activity label or a patient note.</p></div>
+  </div>
+</div></section>
+
+<section class="end"><div class="wrap">
+  <div>
+    <div class="big">reafel.</div>
+    <div class="label tag">Reaching the frail elderly patients for optimizing diagnosis of atrial fibrillation</div>
+  </div>
+  <div class="cta-box reveal">
+    <h3>Try it on your next ten Holter patients.</h3>
+    <button class="btn" data-demo>Book a 20-minute demo <svg><use href="#arrow"/></svg></button>
+  </div>
+</div>
+<div class="wrap"><div class="legal label"><span>© 2026 reafel · student concept · DTU 02810 · not a medical device</span><span><a href="prototype.html" target="_blank">Interactive prototype</a> · <a href="https://www.figma.com/design/tCmE3ftIX8uFUeViCVU9ab/Main-Hub?node-id=744-584" target="_blank" rel="noopener">Figma</a></span></div></div>
+</section>
+
+<div class="modal" id="modal">
+  <form id="demo-form" novalidate>
+    <h3>Book a 20-minute demo</h3>
+    <p>We walk through one real-length recording with you, on your own screen.</p>
+    <div class="f"><label class="label" for="d-name">Name</label><input id="d-name" required autocomplete="name"></div>
+    <div class="f"><label class="label" for="d-clinic">Clinic or department</label><input id="d-clinic" required></div>
+    <div class="f"><label class="label" for="d-mail">Work e-mail</label><input id="d-mail" type="email" required autocomplete="email"></div>
+    <div class="f"><label class="label" for="d-vol">Holter recordings per month</label><select id="d-vol"><option>Fewer than 20</option><option>20–60</option><option>More than 60</option></select></div>
+    <div style="display:flex;gap:10px;margin-top:6px"><button class="btn accent" type="submit">Request demo <svg><use href="#arrow"/></svg></button><button class="btn ghost" type="button" data-close>Cancel</button></div>
+    <div class="ok" id="ok"><b>Thanks, we will be in touch.</b><span style="color:var(--ink-2)">Prototype only. Nothing was sent anywhere.</span></div>
+  </form>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+  // scale the prototype iframe to the frame width
+  const frame = document.querySelector('.frame'), ifr = frame.querySelector('iframe');
+  const fit = () => { ifr.style.transform = 'scale(' + frame.clientWidth / 1440 + ')'; };
+  fit(); addEventListener('resize', fit);
+  // demo modal
+  const modal = document.getElementById('modal'), form = document.getElementById('demo-form');
+  document.querySelectorAll('[data-demo]').forEach(b => b.onclick = () => { modal.classList.add('show'); form.reset(); form.querySelectorAll('.f, [type=submit], [data-close]').forEach(e => e.style.display = ''); document.getElementById('ok').style.display = 'none'; setTimeout(() => document.getElementById('d-name').focus(), 50); });
+  document.querySelector('[data-close]').onclick = () => modal.classList.remove('show');
+  modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('show'); });
+  addEventListener('keydown', e => { if (e.key === 'Escape') modal.classList.remove('show'); });
+  form.onsubmit = e => { e.preventDefault(); const bad = [...form.querySelectorAll('[required]')].find(i => !i.value.trim() || (i.type === 'email' && !/.+@.+\..+/.test(i.value)));
+    if (bad) { bad.focus(); bad.style.outline = '2px solid var(--accent)'; setTimeout(() => bad.style.outline = '', 1200); return; }
+    form.querySelectorAll('.f, [type=submit], [data-close]').forEach(e => e.style.display = 'none'); document.getElementById('ok').style.display = 'block'; setTimeout(() => modal.classList.remove('show'), 2200); };
+  // reveal on scroll
+  const rv = [...document.querySelectorAll('.reveal')];
+  const check = () => { const h = innerHeight; rv.forEach(el => { if (el.classList.contains('in')) return; const r = el.getBoundingClientRect(); if (r.top < h * .92 && r.bottom > 0) el.classList.add('in'); }); };
+  check(); addEventListener('scroll', check, {passive:true}); addEventListener('resize', check); addEventListener('hashchange', () => setTimeout(check, 400)); setTimeout(() => rv.forEach(el => el.classList.add('in')), 4000);
+</script>
+</body>
+</html>

@@ -1,0 +1,744 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>REAFEL Cardiology Platform</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=Outfit:wght@600&display=swap">
+<style>
+/* Layout: fixed 1440 × 900 desktop canvas (as in Figma) scaled to fit the window; four steps share one top bar. Single light look by design. */
+:root{
+  --ink:#111111; --ink-2:#55554f; --mute:#9a9a94; --line:#dadad5; --line-soft:#ebebe7;
+  --paper:#f3f3f1; --surface:#ffffff; --accent:#f04e2a; --accent-press:#d9431f;
+  --sleep:#33332f; --rest:#e4e4e0; --walk:#bdbdb7; --active:#7c7c76;
+  --grid-minor:rgba(240,78,42,.16); --grid-major:rgba(240,78,42,.42);
+  --f-display:"Outfit","Avenir Next","Segoe UI",sans-serif;
+  --f-body:"Geist","Helvetica Neue",Arial,sans-serif;
+  --f-mono:"Geist Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{background:var(--paper)}
+body{margin:0;color:var(--ink);font-family:var(--f-body);font-size:13px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px}
+button,input,textarea,select{font:inherit;color:inherit}
+button{background:none;border:0;padding:0;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#fit{position:relative;margin:0 auto;overflow:hidden}
+#stage{box-sizing:content-box;position:absolute;left:0;top:0;width:1440px;height:900px;transform-origin:0 0;background:var(--paper);display:flex;flex-direction:column;border:1px solid var(--ink);overflow:hidden}
+.L{font-family:var(--f-mono);font-weight:500;font-size:9px;line-height:1.3;letter-spacing:.9px;text-transform:uppercase;white-space:nowrap}
+.mono{font-family:var(--f-mono);font-size:11px;line-height:1.4;font-variant-numeric:tabular-nums}
+.small{font-size:11px;line-height:1.45;color:var(--ink-2)}
+.mute{color:var(--mute)} .ink2{color:var(--ink-2)} .acc{color:var(--accent)}
+.h2{font-family:var(--f-display);font-weight:600;font-size:24px;line-height:1.2;letter-spacing:-.24px}
+.h1{font-family:var(--f-display);font-weight:600;font-size:44px;line-height:1.1;letter-spacing:-.88px}
+.hero{font-family:var(--f-display);font-weight:600;font-size:72px;line-height:.95;letter-spacing:-2.16px}
+.num{font-family:var(--f-display);font-weight:600;font-size:32px;line-height:1;letter-spacing:-.32px;font-variant-numeric:tabular-nums}
+/* top bar */
+.top{height:56px;flex:none;border-bottom:1px solid var(--ink);display:flex;gap:48px;align-items:center;padding:0 32px}
+.steps{flex:1;display:flex;gap:28px}
+.step{display:flex;gap:8px;align-items:center;color:var(--mute)}
+.step i{width:6px;height:6px;background:var(--line)}
+.step[aria-current="page"]{color:var(--ink)} .step[aria-current="page"] i{background:var(--accent)}
+.step:hover{color:var(--ink)}
+.view{flex:1;min-height:0;display:none}
+.view.on{display:flex}
+/* shared components */
+.tag{display:inline-flex;align-items:center;padding:3px 6px;border-radius:2px;border:1px solid var(--ink);font-family:var(--f-mono);font-weight:500;font-size:9px;line-height:1.3;letter-spacing:.9px;text-transform:uppercase;white-space:nowrap;background:transparent;transition:background .12s,color .12s}
+.tag.solid{background:var(--ink);color:var(--surface)}
+.tag.accent{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.tag.muted{background:var(--line-soft);border-color:var(--line-soft);color:var(--ink-2)}
+button.tag:hover:not(.solid):not(.accent){background:var(--line-soft)}
+.btnx{display:inline-flex;align-items:center;gap:10px;padding:10px 14px;border-radius:2px;font-family:var(--f-mono);font-weight:500;font-size:9px;line-height:1.3;letter-spacing:.9px;text-transform:uppercase;white-space:nowrap;transition:background .12s}
+.btnx.accent{background:var(--accent);color:var(--surface)} .btnx.accent:hover{background:var(--accent-press)}
+.btnx.primary{background:var(--ink);color:var(--surface)} .btnx.primary:hover{background:#2a2a27}
+.btnx.ghost{border:1px solid var(--ink);padding:9px 13px} .btnx.ghost:hover{background:var(--line-soft)}
+.btnx[disabled]{background:var(--line);color:var(--mute);cursor:not-allowed}
+.btnx svg{width:14px;height:14px}
+.card{border:1px solid var(--ink);padding:16px;display:flex;flex-direction:column}
+.field{display:flex;flex-direction:column;gap:6px;width:100%}
+.box{background:var(--paper);border:1px solid var(--line);border-radius:2px;padding:10px 12px;font-size:13px;line-height:1.5;width:100%;resize:none;display:block}
+textarea.box:focus,input.box:focus{outline:none;border-color:var(--ink);background:var(--surface)}
+.stat{display:flex;flex-direction:column;gap:4px}
+.stat .v{display:flex;gap:4px;align-items:flex-end}
+.legend{display:flex;gap:14px;align-items:center}
+.legend span{display:flex;gap:5px;align-items:center;color:var(--ink-2)}
+.legend i{width:9px;height:9px;display:block}
+.legend i.dot{border-radius:50%;background:var(--ink)} .legend i.ring{border-radius:50%;border:1.5px solid var(--ink)}
+.cb{width:16px;height:16px;border:1px solid var(--ink);border-radius:2px;flex:none;display:grid;place-items:center;background:transparent;transition:background .12s}
+.cb[aria-checked="true"]{background:var(--ink)}
+.cb svg{width:12px;height:12px;display:none} .cb[aria-checked="true"] svg{display:block}
+.toast{position:absolute;left:50%;bottom:28px;transform:translate(-50%,12px);opacity:0;pointer-events:none;background:var(--ink);color:var(--surface);padding:12px 16px;display:flex;gap:14px;align-items:center;font-size:13px;transition:opacity .2s,transform .2s;z-index:50;border-radius:2px}
+.toast.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.toast button{color:var(--accent);font-family:var(--f-mono);font-size:9px;letter-spacing:.9px;text-transform:uppercase}
+.kbd{font-family:var(--f-mono);font-size:11px;color:var(--mute)}
+
+/* ---- 01 patients ---- */
+#v1 .locate{width:420px;flex:none;border-right:1px solid var(--ink);padding:28px 32px;display:flex;flex-direction:column;gap:22px}
+.search{background:var(--surface);border:1px solid var(--ink);border-radius:2px;display:flex;gap:10px;align-items:center;padding:12px 14px}
+.search input{flex:1;border:0;outline:0;background:transparent;font-size:13px;line-height:1.5;padding:0;min-width:0}
+.search input::placeholder{color:var(--mute)}
+.search:focus-within{box-shadow:0 0 0 2px var(--accent)}
+.appt{display:flex;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);width:100%;text-align:left}
+.appt .tm{width:44px;flex:none}
+.appt .who{flex:1;display:flex;flex-direction:column;gap:1px}
+.appt.next{background:var(--accent);color:var(--surface);padding:14px;border-bottom:0;transition:background .12s}
+.appt.next:hover{background:var(--accent-press)} .appt.next:active{background:#b8391a}
+.appt.done{color:var(--mute)}
+.appt:not(.next):not(.done):hover{background:var(--line-soft)}
+#v1 .table{flex:1;min-width:0;padding:28px 32px;display:flex;flex-direction:column;gap:18px}
+.thead,.prow{display:flex;align-items:center;padding:0 12px}
+.thead{border-bottom:1px solid var(--ink);padding-bottom:10px}
+.thead button{color:var(--mute);text-align:left} .thead button.on{color:var(--ink)}
+.thead button:hover{color:var(--ink)}
+.c1{width:200px}.c2{width:110px}.c3{width:150px}.c4{width:160px}.c5{width:80px}.c6{width:110px}.c7{width:86px}.c8{width:32px}
+.prow{height:58px;border-bottom:1px solid var(--line);border:1px solid transparent;border-bottom-color:var(--line);cursor:pointer;width:100%;text-align:left}
+.prow:hover{background:var(--line-soft)}
+.prow.sel{background:var(--surface);border-color:var(--ink)}
+.burden{display:flex;gap:10px;align-items:center}
+.burden .bar{width:72px;height:4px;background:var(--line);position:relative}
+.burden .bar i{position:absolute;left:0;top:0;height:4px;background:var(--accent)}
+.sq{width:32px;height:32px;background:var(--accent);display:grid;place-items:center;visibility:hidden}
+.prow.sel .sq{visibility:visible}
+.sq:hover{background:var(--accent-press)}
+.sq svg{width:14px;height:14px}
+.nomatch{padding:24px 12px;color:var(--ink-2)}
+
+/* ---- 02 review ---- */
+#v2 .main{flex:1;min-width:0;padding:24px 32px;display:flex;flex-direction:column;gap:16px}
+.phead{display:flex;justify-content:space-between;align-items:flex-end}
+.phead .stats{display:flex;gap:36px;align-items:flex-end}
+.ov{gap:14px}
+.ovsvg{display:block;overflow:visible;cursor:ew-resize;user-select:none}
+.zoom{position:absolute;width:25px;height:25px;display:grid;place-items:center;border-radius:50%}
+.zoom:hover{background:var(--line-soft)}
+.zoom svg{width:22px;height:22px}
+.ecg{gap:10px;position:relative}
+.ecg .hd{display:flex;justify-content:space-between;align-items:center}
+.ecg .hd .meta{display:flex;gap:14px;align-items:center}
+.strips{display:flex;flex-direction:column;gap:6px}
+.strip{position:relative;width:964px;height:96.4px;background-color:var(--surface);overflow:hidden;cursor:crosshair;user-select:none;
+  background-image:linear-gradient(var(--grid-major) 1px,transparent 1px),linear-gradient(90deg,var(--grid-major) 1px,transparent 1px),linear-gradient(var(--grid-minor) 1px,transparent 1px),linear-gradient(90deg,var(--grid-minor) 1px,transparent 1px);
+  background-size:19.28px 19.28px,19.28px 19.28px,3.856px 3.856px,3.856px 3.856px;background-position:0 0}
+.strip svg{position:absolute;inset:0;pointer-events:none}
+.strip .ts{position:absolute;left:0;bottom:0;background:var(--surface);padding:2px 5px;color:var(--ink-2)}
+.strip .onset{position:absolute;top:0;bottom:0;width:1.5px;background:var(--accent)}
+.strip .onset span{position:absolute;left:0;top:0;background:var(--accent);color:var(--surface);padding:2px 5px}
+.mark{position:absolute;top:0;bottom:0;background:rgba(17,17,17,.1);border-left:1.5px solid var(--ink);border-right:1.5px solid var(--ink)}
+.mark .ml{position:absolute;left:-1.5px;top:0;background:var(--ink);color:var(--surface);padding:2px 5px}
+.mark.temp{background:rgba(17,17,17,.14)}
+.mark .hdl{position:absolute;top:0;bottom:0;width:10px;cursor:ew-resize}
+.mark .hdl.l{left:-6px}.mark .hdl.r{right:-6px}
+.mark .hdl::after{content:"";position:absolute;left:3px;top:50%;width:4px;height:18px;margin-top:-9px;background:var(--ink);border-radius:1px}
+.pop{position:absolute;width:303px;background:var(--surface);border:1px solid var(--ink);border-radius:2px;box-shadow:0 10px 28px rgba(0,0,0,.18);padding:14px;display:flex;flex-direction:column;gap:12px;z-index:20}
+.pop .row{display:flex;gap:6px;align-items:center}
+.pop input{padding:9px 10px}
+#v2 .events{width:380px;flex:none;background:var(--surface);border-left:1px solid var(--ink);display:flex;flex-direction:column}
+.ehead{padding:20px 20px 14px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
+.elist{flex:1;min-height:0;overflow-y:auto}
+.erow{display:flex;gap:12px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);width:100%;text-align:left;border-left:3px solid transparent;padding-left:13px}
+.erow:hover{background:var(--line-soft)}
+.erow.sel{background:var(--paper);border-left-color:var(--accent)}
+.erow.flash{animation:flash 1.2s ease-out}
+@keyframes flash{from{background:rgba(240,78,42,.18)}to{background:transparent}}
+.mk{width:8px;height:8px;border-radius:50%;flex:none;background:var(--mute)}
+.mk.af{background:var(--accent)} .mk.ring{background:transparent;border:1.5px solid var(--ink)}
+.erow .tm{width:74px;flex:none;display:flex;flex-direction:column;gap:2px}
+.erow .nm{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;white-space:nowrap;overflow:hidden}
+.erow .nm span:last-child{overflow:hidden;text-overflow:ellipsis}
+.detail{border-top:1px solid var(--ink);padding:18px 20px;display:flex;flex-direction:column;gap:14px;flex:none;height:435px}
+.quote{background:var(--paper);display:flex;gap:10px;padding:10px 12px;align-items:flex-start}
+.quote svg{width:16px;height:16px;flex:none;margin-top:2px}
+.classes{display:flex;gap:6px;flex-wrap:wrap}
+@media (prefers-reduced-motion:reduce){.erow.flash{animation:none}}
+
+/* ---- 03 summary ---- */
+#v3 .main{flex:1;min-width:0;padding:24px 32px;display:flex;flex-direction:column;gap:16px}
+.hgrid{position:relative;width:884px;height:126px}
+.cell{position:absolute;width:30.333px;height:24px;background:var(--surface)}
+.cell.nr{background:var(--line-soft)}
+.cell.af{background:var(--accent);cursor:pointer;display:grid;place-items:center;font-family:var(--f-mono);font-size:11px}
+.cell.af:hover{outline:2px solid var(--ink);outline-offset:-1px}
+.bars{position:relative;width:418px;height:136px}
+.sym{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.sym svg{width:16px;height:16px;flex:none}
+#v3 .journal{width:460px;flex:none;background:var(--surface);border-left:1px solid var(--ink);padding:24px;display:flex;flex-direction:column;gap:16px;overflow-y:auto}
+.select{position:relative}
+.select select{appearance:none;width:100%;background:var(--paper);border:1px solid var(--ink);border-radius:2px;padding:10px 70px 10px 12px;font-weight:500;font-size:13px;line-height:1.5;cursor:pointer}
+.select .code{position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none}
+.why{font-size:11px;color:var(--ink-2)}
+.why button{color:var(--accent);text-decoration:underline;text-underline-offset:2px}
+
+/* ---- 04 consult ---- */
+#v4 .main{flex:1;min-width:0;padding:24px 32px;display:flex;flex-direction:column;gap:16px}
+.mat{flex:1;min-width:0;gap:10px;transition:opacity .2s}
+.mat.off{opacity:.42}
+.mat.shake{animation:shake .3s}
+@keyframes shake{25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+.mstrip{width:438px;height:87.6px;position:relative;background-color:var(--surface);
+  background-image:linear-gradient(var(--grid-major) 1px,transparent 1px),linear-gradient(90deg,var(--grid-major) 1px,transparent 1px),linear-gradient(var(--grid-minor) 1px,transparent 1px),linear-gradient(90deg,var(--grid-minor) 1px,transparent 1px);
+  background-size:17.52px 17.52px,17.52px 17.52px,3.504px 3.504px,3.504px 3.504px}
+.mstrip svg{position:absolute;inset:0}
+#v4 .qs{width:420px;flex:none;background:var(--surface);border-left:1px solid var(--ink);padding:24px;display:flex;flex-direction:column;gap:14px}
+.q{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--line);width:100%;text-align:left}
+.q .cb{margin-top:2px}
+.addq{display:flex;gap:12px;align-items:center;padding:12px 0;color:var(--mute);width:100%}
+.addq:hover{color:var(--ink)}
+.addq svg{width:16px;height:16px}
+.pview{position:absolute;inset:0;background:var(--surface);z-index:40;display:flex;flex-direction:column;padding:48px 72px;gap:28px}
+.pview[hidden]{display:none}
+.pview .pstats{display:flex;gap:48px}
+.pview .pstats .num{font-size:56px}
+.pview .mats{display:flex;gap:24px}
+</style>
+</head>
+<body>
+
+<div id="fit"><div id="stage">
+  <header class="top">
+    <div class="h2">reafel.</div>
+    <nav class="steps" aria-label="Steps">
+      <button class="step L" data-go="patients"><i></i>01 Patients</button>
+      <button class="step L" data-go="review"><i></i>02 Review</button>
+      <button class="step L" data-go="summary"><i></i>03 Summary</button>
+      <button class="step L" data-go="consult"><i></i>04 Consult</button>
+    </nav>
+    <div class="L ink2">Dr. A. Holm — Cardiology outpatient</div>
+  </header>
+
+  <!-- 01 -->
+  <section class="view" id="v1">
+    <div class="locate">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div class="L acc">001 / Locate patient</div>
+        <div class="hero">patients.</div>
+        <div class="small" id="pCount">24 recordings · 6 ready for review</div>
+      </div>
+      <label class="search">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#111" stroke-width="1.5"><circle cx="7" cy="7" r="5"/><path d="M11 11l3.5 3.5"/></svg>
+        <input id="q" type="search" placeholder="Search name or CPR no." autocomplete="off" aria-label="Search name or CPR number">
+        <span class="kbd">⌘K</span>
+      </label>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <div class="L" style="display:flex;justify-content:space-between;padding-bottom:6px"><span>Today · Mon 5 Oct</span><span class="mute">From calendar</span></div>
+        <div class="appt done"><span class="tm mono">09:30</span><span class="who"><b style="font-weight:500">Sofie Madsen</b><span style="font-size:11px">Follow-up · done</span></span><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#9a9a94" stroke-width="1.5"><path d="M2.5 7.5l3 3 6-6.5"/></svg></div>
+        <button class="appt next" data-open="john"><span class="tm mono">10:15</span><span class="who"><b style="font-weight:500">John Doe</b><span style="font-size:11px">Next · <span id="apptLeft">9</span> events to review</span></span><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#fff" stroke-width="1.5"><path d="M2 7h10M8 3l4 4-4 4"/></svg></button>
+        <button class="appt" data-open="karen"><span class="tm mono">11:00</span><span class="who"><b style="font-weight:500">Karen Holst</b><span class="mute" style="font-size:11px">12 events to review</span></span></button>
+        <button class="appt" data-open="mogens"><span class="tm mono">13:30</span><span class="who"><b style="font-weight:500">Mogens Bruun</b><span class="mute" style="font-size:11px">3 events to review</span></span></button>
+      </div>
+    </div>
+    <div class="table">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="display:flex;gap:6px" id="pFilters">
+          <button class="tag solid" data-f="all">All 24</button>
+          <button class="tag" data-f="ready">Ready for review 6</button>
+          <button class="tag" data-f="review">In review 3</button>
+          <button class="tag" data-f="diag">Diagnosed 15</button>
+        </div>
+        <div class="L mute">Sorted by consultation time · click a column to sort</div>
+      </div>
+      <div>
+        <div class="thead L" id="thead"></div>
+        <div id="prows"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 02 -->
+  <section class="view" id="v2">
+    <div class="main">
+      <div class="phead">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div class="L acc">002 / Review and classify</div>
+          <div class="h1">John Doe</div>
+          <div class="small">42 y · Construction worker · Smoker · CPR 120384-•••• · Recorded Thu 1 – Sun 4 Oct</div>
+        </div>
+        <div class="stats">
+          <div class="stat"><span class="L mute">AF burden</span><span class="v"><span class="num">0.8</span><span class="small">% of 72 h</span></span></div>
+          <div class="stat"><span class="L mute">Events</span><span class="v"><span class="num" id="sEv">14</span><span class="small">4 AF suspect</span></span></div>
+          <div class="stat"><span class="L mute">Reviewed</span><span class="v"><span class="num" id="sRev">5</span><span class="small" id="sRevOf">of 14</span></span></div>
+        </div>
+      </div>
+      <div class="card ov">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span class="L">Overview · 72 h recording · drag to move window</span>
+          <div class="legend L"><span><i style="background:var(--sleep)"></i>Sleep</span><span><i style="background:var(--rest)"></i>Rest</span><span><i style="background:var(--walk)"></i>Walk</span><span><i style="background:var(--active)"></i>Active</span><span><i style="background:var(--accent)"></i>AF suspect</span><span><i class="dot"></i>Pt note</span><span><i class="ring"></i>Reviewed</span></div>
+        </div>
+        <div style="position:relative;width:964px;height:208px">
+          <svg class="ovsvg" id="ov" width="964" height="208" viewBox="0 0 964 208" aria-label="72 hour overview. Drag to move the ECG window."></svg>
+          <button class="zoom" style="left:916px;top:194px" data-zoom="out" aria-label="Zoom out: longer ECG window"><svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.6"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5l5 5M7.5 10.5h6"/></svg></button>
+          <button class="zoom" style="left:948px;top:194px" data-zoom="in" aria-label="Zoom in: shorter ECG window"><svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.6"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5l5 5M7.5 10.5h6M10.5 7.5v6"/></svg></button>
+        </div>
+      </div>
+      <div class="card ecg" id="ecgCard">
+        <div class="hd">
+          <div class="meta">
+            <span class="L" id="ecgTitle">ECG · Fri 2 Oct · 09:41:55 – 09:42:25</span>
+            <span class="L mute" id="ecgSpeed">Lead II · 25 mm/s · 10 mm/mV</span>
+            <span class="L ink2" style="display:flex;gap:5px;align-items:center"><i id="ecgActSq" style="width:9px;height:9px;background:var(--active);display:block"></i><span id="ecgAct">Active since 08:02</span></span>
+            <span class="L ink2" id="ecgNote" style="display:flex;gap:5px;align-items:center"><i style="width:9px;height:9px;border-radius:50%;background:var(--ink);display:block"></i><span>Pt note +3 min</span></span>
+          </div>
+          <div style="display:flex;gap:6px" id="spans">
+            <button class="tag" data-span="10">10 s</button>
+            <button class="tag solid" data-span="30">30 s</button>
+            <button class="tag" data-span="300">5 min</button>
+            <button class="tag" data-span="free">Free browse</button>
+          </div>
+        </div>
+        <div class="strips" id="strips"></div>
+      </div>
+    </div>
+    <aside class="events">
+      <div class="ehead">
+        <div style="display:flex;gap:8px;align-items:flex-end"><span class="h2">events.</span><span class="small mute" id="eCount" style="color:var(--mute)">14 · sorted by time</span></div>
+        <div style="display:flex;gap:6px" id="eFilters"></div>
+      </div>
+      <div class="elist" id="elist"></div>
+      <div class="detail" id="detail"></div>
+    </aside>
+  </section>
+
+  <!-- 03 -->
+  <section class="view" id="v3">
+    <div class="main">
+      <div class="phead">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div class="L acc">003 / Summarise and diagnose</div>
+          <div class="h1">John Doe</div>
+          <div class="small" id="sumLine">14 of 14 events reviewed · 4 confirmed AF · 10 other</div>
+        </div>
+        <div class="stats" style="gap:32px">
+          <div class="stat"><span class="L mute">AF burden</span><span class="v"><span class="num">0.8</span><span class="small">%</span></span></div>
+          <div class="stat"><span class="L mute">AF episodes</span><span class="v"><span class="num">4</span></span></div>
+          <div class="stat"><span class="L mute">Longest</span><span class="v"><span class="num">14</span><span class="small">min</span></span></div>
+          <div class="stat"><span class="L mute">Rate in AF</span><span class="v"><span class="num">130–150</span><span class="small">bpm</span></span></div>
+        </div>
+      </div>
+      <div class="card" style="gap:12px">
+        <div style="display:flex;justify-content:space-between"><span class="L">When · minutes in AF per hour of day</span><span class="L mute">Grey = not recorded · click a cell to open it in review</span></div>
+        <div class="hgrid" id="hgrid"></div>
+      </div>
+      <div style="display:flex;gap:16px">
+        <div class="card" style="flex:1;gap:14px">
+          <span class="L">Where · AF versus activity</span>
+          <div class="legend L"><span><i style="background:var(--walk)"></i>Share of recorded time</span><span><i style="background:var(--accent)"></i>Share of AF time</span></div>
+          <div class="bars" id="bars"></div>
+          <div class="small">59 % of AF time falls in the 23 % of the recording spent in physical work.</div>
+        </div>
+        <div class="card" style="flex:1;gap:6px">
+          <span class="L">Symptoms · patient notes versus rhythm</span>
+          <div id="syms"></div>
+          <div class="small">2 of 3 noted symptoms coincide with AF. 2 of 4 AF episodes had no note.</div>
+        </div>
+      </div>
+    </div>
+    <aside class="journal">
+      <div style="display:flex;justify-content:space-between;align-items:flex-end"><span class="h2">journal.</span><span class="L mute" id="autosave">Draft · autosaved 09:58</span></div>
+      <label class="field"><span class="L mute">Anamnesis</span><textarea class="box" id="jAnam" rows="3">42-year-old construction worker, smoker. Referred after emergency visit with palpitations and dizziness at work. No known heart disease.</textarea></label>
+      <label class="field"><span style="display:flex;gap:8px;align-items:center"><span class="L mute">Objective findings</span><span class="tag muted" id="objTag">Drafted from data · edit</span></span><textarea class="box" id="jObj" rows="3">72 h single-lead ECG. 4 AF episodes (5–14 min), 34 min in total, AF burden 0.8 %. Ventricular rate in AF 130–150 bpm. 3 of 4 episodes during walking or physical work.</textarea></label>
+      <label class="field"><span class="L mute">Tentative diagnosis</span>
+        <span class="select"><select id="jDx" aria-label="Tentative diagnosis">
+          <option value="I48.0">Paroxysmal atrial fibrillation</option>
+          <option value="I48.1">Persistent atrial fibrillation</option>
+          <option value="I48.9">Atrial fibrillation, unspecified</option>
+          <option value="R00.2">Palpitations, no arrhythmia found</option>
+          <option value="">Choose a diagnosis…</option>
+        </select><span class="code mono ink2" id="jDxCode">I48.0 ▾</span></span></label>
+      <label class="field"><span class="L mute">Treatment and plan</span><textarea class="box" id="jPlan" rows="2">Discuss stroke-risk assessment and rate versus rhythm control at consultation. Smoking cessation.</textarea></label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btnx accent" id="saveJ">Save to journal <svg viewBox="0 0 14 14" fill="none" stroke="#fff" stroke-width="1.5"><path d="M2 7h10M8 3l4 4-4 4"/></svg></button>
+        <button class="btnx ghost" data-go="consult">Prepare consultation</button>
+      </div>
+      <div class="why" id="whyJ"></div>
+    </aside>
+  </section>
+
+  <!-- 04 -->
+  <section class="view" id="v4">
+    <div class="main">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div class="L acc">004 / Prepare patient talk</div>
+        <div class="hero">consultation.</div>
+        <div class="small">John Doe · today 10:15 · room 3</div>
+      </div>
+      <div class="card" style="gap:16px">
+        <div style="display:flex;justify-content:space-between"><span class="L">Overview for the patient · plain language</span><div class="legend L"><span><i style="background:var(--accent)"></i>Episode of uneven heartbeat</span><span><i style="background:var(--rest)"></i>Night</span></div></div>
+        <div class="plainstats" style="display:flex;gap:16px"></div>
+        <div class="plainline" style="position:relative;width:924px;height:64px"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span class="L">Material to show · ticked items appear in the patient view</span>
+        <div style="display:flex;gap:16px" id="mats"></div>
+        <div class="small" id="matHint" style="min-height:16px"></div>
+      </div>
+    </div>
+    <aside class="qs">
+      <div style="display:flex;justify-content:space-between;align-items:flex-end"><span class="h2">questions.</span><span class="L mute" id="qCount">2 from review · 2 added</span></div>
+      <div id="qlist"></div>
+      <div style="background:var(--paper);padding:12px;display:flex;flex-direction:column;gap:4px"><span class="L mute">Tentative diagnosis</span><span style="font-weight:500" id="dxLine">Paroxysmal atrial fibrillation · I48.0</span></div>
+      <div style="display:flex;gap:8px">
+        <button class="btnx primary" id="openPV">Open patient view <svg viewBox="0 0 14 14" fill="none" stroke="#fff" stroke-width="1.5"><path d="M2 7h10M8 3l4 4-4 4"/></svg></button>
+        <button class="btnx ghost" id="printS">Print summary</button>
+      </div>
+    </aside>
+    <div class="pview" id="pview" hidden>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div style="display:flex;flex-direction:column;gap:10px"><span class="L acc">Patient view · John Doe</span><span class="hero">your heart, 72 hours.</span><span class="small" style="font-size:13px">Recorded Thursday 1 to Sunday 4 October while you went about your normal days.</span></div>
+        <button class="btnx ghost" id="closePV">Close patient view · Esc</button>
+      </div>
+      <div class="pstats"></div>
+      <div class="plainline" style="position:relative;width:924px;height:64px"></div>
+      <div class="mats" id="pvMats"></div>
+    </div>
+  </section>
+
+  <div class="toast" id="toast" role="status"><span id="toastTx"></span><button id="toastBtn" hidden></button></div>
+</div></div>
+
+<script>
+(()=>{
+const $=id=>document.getElementById(id);
+const NS="http://www.w3.org/2000/svg";
+const ARROW='<svg viewBox="0 0 14 14" fill="none" stroke="#fff" stroke-width="1.5"><path d="M2 7h10M8 3l4 4-4 4"/></svg>';
+const NOTE='<svg viewBox="0 0 16 16" fill="none" stroke="#111" stroke-width="1.4" stroke-linejoin="round"><path d="M2.5 3h11v7.5H7l-3 2.5v-2.5H2.5z"/></svg>';
+const CHECK='<svg viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="1.6"><path d="M2.5 6.2l2.4 2.4L9.6 3.6"/></svg>';
+const DAYS=["Thu","Fri","Sat","Sun"],DAYN=["Thu 1 Oct","Fri 2 Oct","Sat 3 Oct","Sun 4 Oct"];
+const P=n=>String(n).padStart(2,"0");
+// time = hours since Thu 1 Oct 08:00
+const H=(d,t)=>{const[a,b,c=0]=t.split(":").map(Number);return DAYS.indexOf(d)*24+a+b/60+c/3600-8};
+const clock=h=>{const tot=h+8;const di=Math.floor(tot/24);const r=tot-di*24;let hh=Math.floor(r),mm=Math.floor((r-hh)*60+1e-6),ss=Math.round(((r-hh)*60-mm)*60);if(ss===60){ss=0;mm++}if(mm===60){mm=0;hh++}return{di,hh,mm,ss}};
+const fmt=h=>{const c=clock(h);return `${DAYS[c.di]} ${P(c.hh)}:${P(c.mm)}`};
+const fmtS=h=>{const c=clock(h);return `${P(c.hh)}:${P(c.mm)}:${P(c.ss)}`};
+const X=h=>84+h*880/72, HX=x=>(x-84)*72/880;
+const CLASSES=["AF","Flutter","Ectopic","Sinus","Artefact"];
+const rng=seed=>{let s=(seed>>>0)||1;return()=>{s^=s<<13;s^=s>>>17;s^=s<<5;return (s>>>0)/4294967296}};
+
+/* ---------- data (synthetic, as in the Figma) ---------- */
+const ACT=[[84,48.889,"active"],[132.89,6.111,"rest"],[139,42.778,"active"],[181.78,18.333,"walk"],[200.11,67.222,"rest"],[267.33,85.556,"sleep"],[352.89,12.222,"rest"],[365.11,12.222,"walk"],[377.33,48.889,"active"],[426.22,6.111,"rest"],[432.33,42.778,"active"],[475.11,18.333,"walk"],[493.44,67.222,"rest"],[560.67,110,"sleep"],[670.67,24.444,"rest"],[695.11,18.333,"walk"],[713.44,30.556,"rest"],[744,12.222,"active"],[756.22,48.889,"rest"],[805.11,6.111,"walk"],[811.22,48.889,"rest"],[860.11,103.889,"sleep"]];
+const actAt=h=>{const x=X(h);return ACT.find(([a,w])=>x>=a&&x<a+w)||ACT[ACT.length-1]};
+const E=[
+ {d:"Thu",t:"11:01:20",dur:8,name:"Ectopic beats",auto:"Ectopic",p:.74,rev:"Ectopic"},
+ {d:"Thu",t:"15:20:00",dur:360,name:"Irregular rhythm",auto:"AF",p:.84,rev:"AF",hcp:"Short run during work, no symptoms noted."},
+ {d:"Thu",t:"19:43:10",dur:12,name:"Fast rhythm",auto:"Sinus",p:.69,rev:"Sinus"},
+ {d:"Fri",t:"03:12:40",dur:2.4,name:"Pause",auto:"Sinus",p:.62,rev:"Sinus",label:"Benign"},
+ {d:"Fri",t:"06:19:30",dur:20,name:"Ectopic beats",auto:"Ectopic",p:.71,rev:"Ectopic"},
+ {d:"Fri",t:"09:42:01",dur:840,name:"Irregular rhythm",auto:"AF",p:.87,hcp:"Onset during exertion. Irregularly irregular, no P waves. HR 130–150."},
+ {d:"Fri",t:"13:49:15",dur:15,name:"Ectopic beats",auto:"Ectopic",p:.71},
+ {d:"Fri",t:"16:30:00",dur:300,name:"Irregular rhythm",auto:"AF",p:.82},
+ {d:"Fri",t:"21:25:00",dur:30,name:"Noisy signal",auto:"Artefact",p:.64},
+ {d:"Sat",t:"04:07:20",dur:3.1,name:"Pause",auto:"Sinus",p:.58},
+ {d:"Sat",t:"07:43:00",dur:18,name:"Fast rhythm",auto:"Sinus",p:.66},
+ {d:"Sat",t:"14:10:00",dur:540,name:"Irregular rhythm",auto:"AF",p:.79},
+ {d:"Sat",t:"18:31:30",dur:10,name:"Ectopic beats",auto:"Ectopic",p:.69},
+ {d:"Sun",t:"02:13:10",dur:2.2,name:"Pause",auto:"Sinus",p:.6}
+].map((e,i)=>Object.assign(e,{id:i+1,h:H(e.d,e.t),pick:e.rev||e.auto,hcp:e.hcp||"",created:false,asked:false}));
+const NOTES=[
+ {h:H("Fri","09:45"),tag:"Dizzy",quote:"Felt dizzy and heart racing on the scaffold.",src:"Patient · Fri 09:45 · phone"},
+ {h:H("Sat","14:15"),tag:"Palpitations",quote:"Heart fluttering, sitting down after lunch.",src:"Patient · Sat 14:15 · watch · voice"},
+ {h:H("Sat","22:30"),tag:"Chest tight",quote:"Chest feels tight, heart pounding.",src:"Patient · Sat 22:30 · watch · voice"}
+];
+const noteFor=e=>NOTES.find(n=>n.h>=e.h-5/60&&n.h<=e.h+e.dur/3600+15/60);
+const AFSP=()=>E.filter(e=>e.auto==="AF").map(e=>[e.h*3600,e.h*3600+e.dur]);
+let MARKS=[{a:(H("Fri","09:42:00")*3600)+8.2,b:(H("Fri","09:42:00")*3600)+10.8,label:"Your mark · no P waves, irregular RR"}];
+const QUEST=[
+ {text:"What were you doing on the scaffold when you felt dizzy on Friday morning?",from:"From event 06",on:true,src:"review",ev:6},
+ {text:"Saturday 22:30 you noted chest tightness. The ECG shows normal rhythm then. What did it feel like?",from:"From patient note",on:true,src:"review"},
+ {text:"How much coffee, alcohol and nicotine on a working day?",on:false,src:"added"},
+ {text:"Anyone in the family with atrial fibrillation or stroke?",on:false,src:"added"}
+];
+E[5].asked=true;
+const ST={view:"patients",win:H("Fri","09:41:55"),span:30,free:false,sel:6,filter:"all",journalSaved:false,objEdited:false};
+
+/* ---------- routing & fit ---------- */
+const VIEWS={patients:"v1",review:"v2",summary:"v3",consult:"v4"};
+function show(v){if(!VIEWS[v])v="patients";ST.view=v;
+  Object.entries(VIEWS).forEach(([k,id])=>$(id).classList.toggle("on",k===v));
+  document.querySelectorAll(".step").forEach(s=>s.setAttribute("aria-current",s.dataset.go===v?"page":"false"));
+  if(v==="review")renderReview(); if(v==="summary")renderSummary(); if(v==="consult")renderConsult();
+  if(location.hash.slice(1)!==v)history.replaceState(null,"","#"+v);
+}
+window.addEventListener("hashchange",()=>show(location.hash.slice(1)));
+document.addEventListener("click",e=>{const g=e.target.closest("[data-go]");if(g)show(g.dataset.go)});
+function fit(){const w=document.body.clientWidth-parseFloat(getComputedStyle(document.body).paddingLeft)-parseFloat(getComputedStyle(document.body).paddingRight);
+  const s=Math.min(1,w/1442);$("stage").style.transform=`scale(${s})`;$("fit").style.width=1442*s+"px";$("fit").style.height=902*s+"px"}
+window.addEventListener("resize",fit);
+let tt;function toast(msg,btn,fn){$("toastTx").textContent=msg;const b=$("toastBtn");b.hidden=!btn;if(btn){b.textContent=btn;b.onclick=()=>{fn();$("toast").classList.remove("on")}}
+  $("toast").classList.add("on");clearTimeout(tt);tt=setTimeout(()=>$("toast").classList.remove("on"),btn?5000:2600)}
+
+/* ---------- 01 patients ---------- */
+const PATS=[
+ {n:"John Doe",a:"42 y · M",cpr:"120384",rec:"Thu 1 – Sun 4 Oct · 72 h",b:.8,tr:9,st:"review",c:"Today 10:15",k:1,john:1},
+ {n:"Karen Holst",a:"58 y · F",cpr:"030968",rec:"Mon 28 – Thu 1 Oct · 72 h",b:3.2,tr:12,st:"ready",c:"Today 11:00",k:2},
+ {n:"Mogens Bruun",a:"64 y · M",cpr:"210762",rec:"Tue 29 – Fri 2 Oct · 72 h",b:0,tr:3,st:"ready",c:"Today 13:30",k:3},
+ {n:"Aisha Rahimi",a:"47 y · F",cpr:"150779",rec:"Wed 30 – Sat 3 Oct · 72 h",b:.3,tr:6,st:"ready",c:"Tue 09:00",k:4},
+ {n:"Per Lindqvist",a:"61 y · M",cpr:"080465",rec:"Wed 30 – Sat 3 Oct · 72 h",b:11.4,tr:21,st:"ready",c:"Tue 10:30",k:5},
+ {n:"Sofie Madsen",a:"44 y · F",cpr:"270282",rec:"Thu 24 – Sun 27 Sep · 72 h",b:0,tr:0,st:"diag",c:"Done",k:6},
+ {n:"Henrik Dam",a:"55 y · M",cpr:"190571",rec:"Fri 25 – Mon 28 Sep · 72 h",b:1.9,tr:0,st:"diag",c:"Done",k:7},
+ {n:"Lone Friis",a:"63 y · F",cpr:"040363",rec:"Sun 4 Oct – · day 2 of 3",b:null,tr:null,st:"rec",c:"Fri 14:00",k:8}
+];
+const COLS=[["c1","Patient","n"],["c2","CPR","cpr"],["c3","Recording","k"],["c4","AF burden","b"],["c5","To review","tr"],["c6","Status","st"],["c7","Consult","k"],["c8","",null]];
+const PST={sort:"c7",dir:1,q:"",f:"all",sel:"John Doe"};
+function renderThead(){$("thead").innerHTML=COLS.map(([c,l,k])=>k?`<button class="${c}${PST.sort===c?" on":""}" data-sort="${c}">${l}${PST.sort===c?(PST.dir>0?" ↑":" ↓"):""}</button>`:`<span class="${c}"></span>`).join("")}
+function renderRows(){
+  const q=PST.q.trim().toLowerCase().replace(/[-\s]/g,"");
+  let rows=PATS.filter(p=>(PST.f==="all"||p.st===PST.f)&&(!q||p.n.toLowerCase().replace(/\s/g,"").includes(q)||p.cpr.startsWith(q)));
+  const key=COLS.find(c=>c[0]===PST.sort)[2];
+  rows.sort((a,b)=>{let x=a[key],y=b[key];if(x==null)x=-1;if(y==null)y=-1;return (typeof x==="string"?x.localeCompare(y):x-y)*PST.dir});
+  const stTag={review:'<span class="tag">In review</span>',ready:'<span class="tag accent">Ready</span>',diag:'<span class="tag solid">Diagnosed</span>',rec:'<span class="tag muted">Recording</span>'};
+  $("prows").innerHTML=rows.length?rows.map(p=>`<div class="prow${PST.sel===p.n?" sel":""}" role="button" tabindex="0" data-p="${p.n}">
+    <span class="c1" style="display:flex;flex-direction:column;gap:1px"><b style="font-weight:500">${p.n}</b><span class="small mute" style="color:var(--mute)">${p.a}</span></span>
+    <span class="c2 mono ink2">${p.cpr}-••••</span><span class="c3 small">${p.rec}</span>
+    <span class="c4">${p.b==null?'<span class="mono mute">—</span>':`<span class="burden"><span class="bar"><i style="width:${Math.max(.5,Math.min(72,p.b*6))}px"></i></span><span class="mono">${p.b.toFixed(1)} %</span></span>`}</span>
+    <span class="c5 mono ${p.tr?"":"mute"}">${p.tr==null?"—":p.john?leftCount():p.tr}</span><span class="c6">${stTag[p.st]}</span>
+    <span class="c7 mono ink2">${p.c}</span><span class="c8"><button class="sq" data-openp="${p.n}" aria-label="Open ${p.n}">${ARROW}</button></span></div>`).join("")
+    :`<div class="nomatch">No patient found, check the CPR no.</div>`;
+  $("pCount").textContent=q?`${rows.length} of 24 recordings match “${PST.q}”`:"24 recordings · 6 ready for review";
+}
+function openPatient(n){if(n==="John Doe"){const first=E.find(e=>!e.rev);if(first){ST.sel=first.id;ST.win=first.h-6/3600}show("review")}else toast(`This prototype holds the recording for John Doe only.`,"Open John Doe",()=>openPatient("John Doe"))}
+$("q").addEventListener("input",e=>{PST.q=e.target.value;renderRows()});
+$("thead").addEventListener("click",e=>{const b=e.target.closest("[data-sort]");if(!b)return;const c=b.dataset.sort;PST.dir=PST.sort===c?-PST.dir:1;PST.sort=c;renderThead();renderRows()});
+$("pFilters").addEventListener("click",e=>{const b=e.target.closest("[data-f]");if(!b)return;PST.f=b.dataset.f;[...$("pFilters").children].forEach(x=>x.classList.toggle("solid",x===b));renderRows()});
+$("prows").addEventListener("click",e=>{const o=e.target.closest("[data-openp]");if(o){openPatient(o.dataset.openp);return}const r=e.target.closest("[data-p]");if(r){PST.sel=r.dataset.p;renderRows()}});
+$("prows").addEventListener("dblclick",e=>{const r=e.target.closest("[data-p]");if(r)openPatient(r.dataset.p)});
+$("prows").addEventListener("keydown",e=>{const r=e.target.closest("[data-p]");if(r&&e.key==="Enter")openPatient(r.dataset.p)});
+document.querySelectorAll("[data-open]").forEach(b=>b.addEventListener("click",()=>openPatient({john:"John Doe",karen:"Karen Holst",mogens:"Mogens Bruun"}[b.dataset.open])));
+
+/* ---------- ECG synthesis ---------- */
+const g=(x,m,s)=>Math.exp(-((x-m)*(x-m))/(2*s*s));
+const inAF=t=>AFSP().some(([a,b])=>t>=a&&t<=b);
+const hrBase=h=>({sleep:56,rest:72,walk:92,active:104})[actAt(h)[2]];
+function beatsFor(t0,t1,fixedHr){const out=[];let t=Math.floor((t0-3)/2)*2;let i=0;
+  while(t<t1+1.2){const r=rng(Math.floor(t*997)+17);const af=fixedHr?fixedHr>110:inAF(t);
+    const hr=fixedHr||hrBase(t/3600);const rr=af?.33+r()*.27:60/hr*(.96+r()*.08);out.push({t,af});t+=rr;if(++i>4000)break}return out}
+function ecgPath(t0,t1,w,h,pxmv,fixedHr){const bs=beatsFor(t0,t1,fixedHr);const base=h*.6;let d="";let j=0;
+  for(let px=0;px<=w;px+=1.25){const t=t0+(t1-t0)*px/w;let v=.025*Math.sin(2*Math.PI*.23*t);
+    while(j<bs.length-1&&bs[j+1].t<t-.7)j++;
+    let af=fixedHr?fixedHr>110:inAF(t);
+    for(let k=j;k<bs.length&&bs[k].t<t+.7;k++){const dt=t-bs[k].t;if(!af)v+=.13*g(dt,-.17,.022);v+=-.09*g(dt,-.035,.009)+1.15*g(dt,0,.011)-.28*g(dt,.035,.012)+.27*g(dt,.25,.045)}
+    if(af)v+=.045*Math.sin(2*Math.PI*6.3*t)+.028*Math.sin(2*Math.PI*9.4*t+1.3);
+    d+=(px?"L":"M")+px.toFixed(2)+","+(base-v*pxmv).toFixed(2)}
+  return d}
+
+/* ---------- 02 review ---------- */
+function hrAtH(h){const r=rng(Math.floor(h*400)+3);r();let v=hrBase(h)+5*Math.sin(h*2.1)+3.5*Math.sin(h*7.3+1)+(r()-.5)*13;
+  for(const e of E)if(e.auto==="AF"&&h>=e.h-.15&&h<=e.h+e.dur/3600+.15)v=Math.max(v,128+r()*16);return v}
+function renderOverview(){
+  const s=$("ov");let o="";
+  o+=`<rect x="84" y="0" width="880" height="64" fill="var(--surface)"/>`;
+  [[53.33,"60"],[21.33,"120"]].forEach(([y,l])=>o+=`<line x1="84" x2="964" y1="${y}" y2="${y}" stroke="var(--line)" stroke-width=".75"/><text x="76" y="${y+4}" text-anchor="end" class="mono" style="font-size:11px" fill="var(--mute)">${l}</text>`);
+  o+=`<text x="0" y="11" class="L" fill="var(--ink)" style="font-size:9px">HEART RATE</text><text x="0" y="23" class="L" fill="var(--mute)" style="font-size:9px">BPM</text>`;
+  E.filter(e=>e.auto==="AF").forEach(e=>o+=`<rect x="${X(e.h)}" y="0" width="${Math.max(4,e.dur/3600*880/72)}" height="64" fill="var(--accent)" opacity=".22"/>`);
+  let p="";for(let x=84;x<=964;x+=1.5){const v=hrAtH(HX(x));p+=(x===84?"M":"L")+x+","+Math.max(2,53.33-(v-60)*.5333).toFixed(1)}
+  o+=`<path d="${p}" fill="none" stroke="var(--ink)" stroke-width="1" stroke-linejoin="round"/>`;
+  const lab=(y,t)=>`<text x="0" y="${y+9}" class="L" fill="var(--ink)" style="font-size:9px">${t}</text>`;
+  o+=lab(76,"ACTIVITY");ACT.forEach(([x,w,c])=>o+=`<rect x="${x}" y="76" width="${w}" height="12" fill="var(--${c})"/>`);
+  o+=lab(100,"AUTO EVENTS")+`<line x1="84" x2="964" y1="107" y2="107" stroke="var(--line)" stroke-width=".75"/>`;
+  E.filter(e=>!e.created).forEach(e=>{const af=e.auto==="AF";o+=`<rect data-ev="${e.id}" x="${X(e.h)-(af?2:1)}" y="${af?100:101}" width="${af?4:2}" height="${af?14:12}" fill="${af?"var(--accent)":"var(--mute)"}" style="cursor:pointer"/>`});
+  o+=lab(124,"PATIENT NOTES")+`<line x1="84" x2="964" y1="131" y2="131" stroke="var(--line)" stroke-width=".75"/>`;
+  NOTES.forEach(n=>o+=`<circle cx="${X(n.h)}" cy="131" r="4.5" fill="var(--ink)"/><text x="${X(n.h)+9}" y="135" style="font:400 11px var(--f-body)" fill="var(--ink-2)">${n.tag}</text>`);
+  o+=lab(148,"YOUR NOTES")+`<line x1="84" x2="964" y1="155" y2="155" stroke="var(--line)" stroke-width=".75"/>`;
+  E.filter(e=>e.rev).forEach(e=>o+=`<circle data-ev="${e.id}" cx="${X(e.h)}" cy="155" r="3.75" fill="var(--paper)" stroke="var(--ink)" stroke-width="1.5" style="cursor:pointer"/>`);
+  for(let i=1;i<=12;i++){const h=i*6-2;const x=X(h);const mid=(h+8)%24===0;
+    o+=mid?`<line x1="${x}" x2="${x}" y1="0" y2="172" stroke="var(--ink-2)" stroke-width=".75"/>`:`<line x1="${x}" x2="${x}" y1="166" y2="172" stroke="var(--mute)" stroke-width=".75"/>`;
+    o+=`<text x="${x}" y="187" text-anchor="middle" style="font:400 11px var(--f-mono)" fill="var(--mute)">${P((h+8)%24)}:00</text>`}
+  [[84,"THU 1 OCT"],[283.56,"FRI 2"],[576.89,"SAT 3"],[870.22,"SUN 4"]].forEach(([x,t])=>o+=`<text x="${x}" y="201" class="L" style="font-size:9px" fill="var(--ink)">${t}</text>`);
+  const wx=X(ST.win),ww=Math.max(2,ST.span/3600*880/72);
+  o+=`<rect id="winr" x="${wx-1}" y="-9" width="${ww+2}" height="185" fill="rgba(240,78,42,.08)" stroke="var(--accent)" stroke-width="1.5" rx="1"/>`;
+  s.innerHTML=o;
+}
+function snap(h){let best=null,bd=1e9;for(const e of E){const d=Math.abs(e.h-h);if(d<bd){bd=d;best=e}}
+  const thr=Math.max(2/60,4*72/880); /* 2 min, or 4 px at overview scale */return best&&bd<=thr?best:null}
+(()=>{const s=$("ov");let drag=false;
+  const toH=e=>{const r=s.getBoundingClientRect();const x=(e.clientX-r.left)*964/r.width;return Math.min(72-ST.span/3600,Math.max(0,HX(x)))};
+  s.addEventListener("pointerdown",e=>{const m=e.target.closest("[data-ev]");if(m){selectEvent(+m.dataset.ev);return}drag=true;s.setPointerCapture(e.pointerId);ST.win=toH(e);renderOverview();renderECG()});
+  s.addEventListener("pointermove",e=>{if(!drag)return;ST.win=toH(e);const r=$("winr");r.setAttribute("x",X(ST.win)-1);renderECG()});
+  s.addEventListener("pointerup",e=>{if(!drag)return;drag=false;const ev=snap(ST.win);if(ev){ST.win=ev.h-6/3600;ST.sel=ev.id;renderEvents()}renderOverview();renderECG()});
+})();
+function setSpan(v){if(v==="free"){ST.free=true;ST.span=30}else{ST.free=false;ST.span=+v}
+  document.querySelectorAll("#spans .tag").forEach(t=>t.classList.toggle("solid",t.dataset.span===String(v)));renderOverview();renderECG()}
+$("spans").addEventListener("click",e=>{const b=e.target.closest("[data-span]");if(b)setSpan(b.dataset.span)});
+document.querySelectorAll("[data-zoom]").forEach(b=>b.addEventListener("click",()=>{const o=[10,30,300];let i=o.indexOf(ST.span);i=Math.max(0,Math.min(2,i+(b.dataset.zoom==="in"?-1:1)));setSpan(String(o[i]))}));
+
+let TEMP=null,popOpen=false;
+function renderECG(){
+  const t0=ST.win*3600,span=ST.span,per=span/3,mmps=Math.round(964/3.856/per*10)/10;
+  $("ecgTitle").textContent=`ECG · ${DAYN[clock(ST.win).di]} · ${fmtS(ST.win)} – ${fmtS(ST.win+span/3600)}`;
+  $("ecgSpeed").textContent=`Lead II · ${mmps} mm/s · 10 mm/mV${ST.free?" · ← → to browse":""}`;
+  const a=actAt(ST.win);$("ecgActSq").style.background=`var(--${a[2]})`;
+  $("ecgAct").textContent=`${({active:"Active",walk:"Walking",rest:"Resting",sleep:"Asleep"})[a[2]]} since ${fmt(HX(a[0])).slice(4)}`;
+  const n=NOTES.find(n=>Math.abs(n.h-ST.win)<30/60);
+  $("ecgNote").style.visibility=n?"visible":"hidden";
+  if(n){const d=Math.round((n.h-ST.win)*60);$("ecgNote").lastElementChild.textContent=`Pt note ${d>=0?"+":"−"}${Math.abs(d)} min`}
+  const afs=E.filter(e=>e.auto==="AF");let html="";
+  for(let i=0;i<3;i++){const a0=t0+i*per,a1=a0+per;
+    let inner=`<svg width="964" height="96.4"><path d="${ecgPath(a0,a1,964,96.4,38.56)}" fill="none" stroke="var(--ink)" stroke-width="1.1" stroke-linejoin="round"/></svg>`;
+    afs.forEach(e=>{const ts=e.h*3600;if(ts>=a0&&ts<a1){const x=(ts-a0)/per*964;inner+=`<div class="onset" style="left:${x}px"><span class="L">Onset ${fmtS(e.h)} · auto</span></div>`}});
+    MARKS.concat(TEMP?[TEMP]:[]).forEach(m=>{const s=Math.max(m.a,a0),f=Math.min(m.b,a1);if(f<=s)return;
+      const x=(s-a0)/per*964,w=(f-s)/per*964;const isT=m===TEMP;
+      inner+=`<div class="mark${isT?" temp":""}" style="left:${x}px;width:${w}px">${m.a>=a0?`<span class="ml L">${isT?tempLabel():m.label}</span>`:""}${isT&&!m.live?`${m.a>=a0?'<span class="hdl l" data-h="a"></span>':""}${m.b<=a1?'<span class="hdl r" data-h="b"></span>':""}`:""}</div>`});
+    inner+=`<span class="ts mono">${fmtS(a0/3600)}</span>`;
+    html+=`<div class="strip" data-i="${i}">${inner}</div>`}
+  $("strips").innerHTML=html;
+}
+const tempLabel=()=>{const d=TEMP.b-TEMP.a;return `New mark · ${fmtS(TEMP.a/3600)} – ${fmtS(TEMP.b/3600)} · ${d.toFixed(1)} s`};
+(()=>{const box=$("strips");let mode=null,start=0;
+  const tAt=e=>{const st=e.target.closest(".strip")||box.querySelector(`.strip[data-i="${mode&&mode.i||0}"]`);const r=st.getBoundingClientRect();const i=+st.dataset.i;const per=ST.span/3;
+    return {t:ST.win*3600+i*per+Math.max(0,Math.min(1,(e.clientX-r.left)/r.width))*per,i}};
+  box.addEventListener("pointerdown",e=>{if(!e.target.closest(".strip"))return;const h=e.target.closest(".hdl");const p=tAt(e);
+    if(h&&TEMP){mode={edge:h.dataset.h,i:p.i};closePop()}else{closePop();TEMP={a:p.t,b:p.t,live:true};mode={edge:"new",i:p.i};start=p.t}
+    box.setPointerCapture(e.pointerId);renderECG()});
+  box.addEventListener("pointermove",e=>{if(!mode)return;const st=box.querySelector(`.strip[data-i="${mode.i}"]`);const r=st.getBoundingClientRect();const per=ST.span/3;
+    const t=ST.win*3600+mode.i*per+Math.max(0,Math.min(1,(e.clientX-r.left)/r.width))*per;
+    if(mode.edge==="new"){TEMP.a=Math.min(start,t);TEMP.b=Math.max(start,t)}else if(mode.edge==="a")TEMP.a=Math.min(t,TEMP.b-.5);else TEMP.b=Math.max(t,TEMP.a+.5);
+    renderECG()});
+  box.addEventListener("pointerup",()=>{if(!mode)return;const m=mode;mode=null;
+    if(TEMP&&TEMP.b-TEMP.a<.5){TEMP=null;renderECG();if(m.edge==="new")toast("Drag at least 0.5 s across a strip to mark it.");return}
+    if(TEMP){TEMP.live=false;renderECG();openPop(m.i)}});
+})();
+function openPop(i){const card=$("ecgCard");const per=ST.span/3;const x=((TEMP.a-ST.win*3600-i*per)/per)*964;
+  const pick=inAF((TEMP.a+TEMP.b)/2)?"AF":"Sinus";TEMP.pick=pick;
+  const p=document.createElement("div");p.className="pop";p.id="pop";
+  const top=47+(i+1)*96.4+i*6+6;const left=Math.max(17,Math.min(17+964-303,17+x));
+  p.style.left=left+"px";p.style.top=(i===2?47+2*102.4-178:top)+"px";
+  p.innerHTML=`<span class="L">New event · classify</span><div class="row" id="popTags">${CLASSES.map((c,k)=>`<button class="tag${c===pick?(c==="AF"?" accent":" solid"):""}" data-c="${c}" title="Press ${k+1}">${c}</button>`).join("")}</div>
+  <input class="box" id="popNote" placeholder="Add a note (optional)" autocomplete="off">
+  <div class="row"><button class="btnx accent" id="popSave">Save event ${ARROW}</button><button class="btnx ghost" id="popCancel">Cancel</button><span class="kbd">Enter · Esc</span></div>`;
+  card.appendChild(p);popOpen=true;$("popNote").focus();
+  $("popTags").addEventListener("click",e=>{const b=e.target.closest("[data-c]");if(!b)return;TEMP.pick=b.dataset.c;[...$("popTags").children].forEach(t=>{t.className="tag"+(t.dataset.c===TEMP.pick?(t.dataset.c==="AF"?" accent":" solid"):"")})});
+  $("popSave").onclick=savePop;$("popCancel").onclick=()=>{TEMP=null;closePop();renderECG()};
+}
+function closePop(){const p=$("pop");if(p)p.remove();popOpen=false}
+function savePop(){const note=$("popNote").value.trim();const cls=TEMP.pick;
+  MARKS.push({a:TEMP.a,b:TEMP.b,label:`Your mark · ${cls}${note?" · "+note:""}`});
+  const id=E.length+1;E.push({id,h:TEMP.a/3600,dur:TEMP.b-TEMP.a,name:"Your mark",auto:cls,p:null,rev:cls,pick:cls,hcp:note,created:true,asked:false});
+  E.sort((a,b)=>a.h-b.h);TEMP=null;closePop();renderReview();
+  const r=document.querySelector(`.erow[data-e="${id}"]`);if(r){r.scrollIntoView({block:"nearest"});r.classList.add("flash")}
+  toast(`Event saved · ${cls} · added to your notes lane`)}
+
+function evNo(e){return P(e.id)}
+function renderEvents(){
+  const n=E.length,rev=E.filter(e=>e.rev).length,unrev=n-rev;
+  $("sEv").textContent=n;$("sRev").textContent=rev;$("sRevOf").textContent="of "+n;$("eCount").textContent=`${n} · sorted by time`;
+  const F=[["all",`All ${n}`],["unrev",`Unreviewed ${unrev}`],["af",`AF suspect ${E.filter(e=>e.auto==="AF"&&!e.created).length}`],["pt",`Pt notes ${NOTES.length}`]];
+  $("eFilters").innerHTML=F.map(([k,l])=>`<button class="tag${ST.filter===k?" solid":""}" data-ef="${k}">${l}</button>`).join("");
+  const list=E.filter(e=>ST.filter==="all"||(ST.filter==="unrev"&&!e.rev)||(ST.filter==="af"&&e.auto==="AF"&&!e.created)||(ST.filter==="pt"&&noteFor(e)));
+  $("elist").innerHTML=list.map(e=>{const nt=noteFor(e);const durT=e.dur>=60?Math.round(e.dur/60)+" min":(+e.dur.toFixed(1))+" s";
+    const act=({active:"Active",walk:"Walk",rest:"Rest",sleep:"Sleep"})[actAt(e.h)[2]];
+    const sub=e.created?"Created by you"+(e.hcp?" · "+e.hcp:""):`${act}${e.auto==="AF"?(nt?` · pt note “${nt.tag}”`:" · no pt note"):(nt?` · pt note “${nt.tag}”`:"")}`;
+    const tag=e.rev?`<span class="tag ${e.rev==="AF"?"accent":"solid"}">${e.label&&e.rev===e.auto?e.label:e.rev}</span>`:`<span class="tag muted">Unreviewed</span>`;
+    return `<button class="erow${ST.sel===e.id?" sel":""}" data-e="${e.id}"><span class="mk${e.created?" ring":e.auto==="AF"?" af":""}"></span><span class="tm"><span class="mono">${fmt(e.h)}</span><span class="small mute" style="color:var(--mute)">${durT}</span></span><span class="nm"><span style="font-weight:500">${e.name}</span><span class="small">${sub}</span></span>${tag}</button>`}).join("")||`<div class="small" style="padding:16px">No events match this filter.</div>`;
+  const s=$("elist").querySelector(".erow.sel");if(s)s.scrollIntoView({block:"nearest"});
+  renderDetail();$("apptLeft").textContent=leftCount();
+}
+const leftCount=()=>E.filter(e=>!e.rev).length;
+function renderDetail(){const e=E.find(x=>x.id===ST.sel);if(!e){$("detail").innerHTML="";return}
+  const nt=noteFor(e);
+  const auto=e.created?`<span class="ink2">Created by you</span>`:`<span class="${e.auto==="AF"?"acc":"ink2"}">Auto: ${e.auto==="AF"?"possible AF":e.name.toLowerCase()} · ${e.p.toFixed(2)}</span>`;
+  $("detail").innerHTML=`<div class="L" style="display:flex;justify-content:space-between"><span>Event ${evNo(e)} · ${fmt(e.h)}</span>${auto}</div>
+    ${nt?`<div class="quote">${NOTE}<div style="display:flex;flex-direction:column;gap:2px"><span>“${nt.quote}”</span><span class="small mute" style="color:var(--mute)">${nt.src}</span></div></div>`:`<div class="quote"><span class="small">No patient note within 15 min of this event.</span></div>`}
+    <div style="display:flex;flex-direction:column;gap:8px"><span class="L mute">Classify <span style="letter-spacing:0;text-transform:none">· keys 1–5</span></span><div class="classes" id="cls">${CLASSES.map((c,k)=>`<button class="tag${e.pick===c?(c==="AF"?" accent":" solid"):""}" data-c="${c}" title="Press ${k+1}">${c}</button>`).join("")}</div></div>
+    <label class="field"><span class="L mute">Your note</span><textarea class="box" id="hcpNote" rows="2" style="background:var(--surface)" placeholder="What you see in the strip">${e.hcp}</textarea></label>
+    <div><button class="btnx accent" id="confirm">${e.rev?"Update classification":"Confirm event and next"} ${ARROW}</button></div>
+    <div><button class="btnx ghost" id="ask">${e.asked?"Added to questions ✓":"Add event to consultation"}</button></div>`;
+  $("cls").onclick=ev=>{const b=ev.target.closest("[data-c]");if(b)pickClass(b.dataset.c)};
+  $("hcpNote").oninput=ev=>{e.hcp=ev.target.value};
+  $("confirm").onclick=confirmEv;
+  $("ask").onclick=()=>{if(e.asked)return;e.asked=true;QUEST.push({text:`${fmt(e.h)}: the recording shows ${e.name.toLowerCase()}. What were you doing then?`,from:`From event ${evNo(e)}`,on:true,src:"review",ev:e.id});renderDetail();toast(`Added to questions on 04 Consult`,"Open 04",()=>show("consult"))};
+}
+function pickClass(c){const e=E.find(x=>x.id===ST.sel);e.pick=c;[...$("cls").children].forEach(t=>t.className="tag"+(t.dataset.c===c?(c==="AF"?" accent":" solid"):""))}
+function confirmEv(){const e=E.find(x=>x.id===ST.sel);const was=!!e.rev;e.rev=e.pick;if(e.label&&e.rev!==e.auto)e.label=null;
+  const idx=E.indexOf(e);const next=E.slice(idx+1).concat(E.slice(0,idx)).find(x=>!x.rev);
+  if(was){renderReview();toast(`Event ${evNo(e)} updated to ${e.rev}`);return}
+  if(next){ST.sel=next.id;ST.win=next.h-6/3600;renderReview();toast(`Event ${evNo(e)} confirmed as ${e.rev} · opened event ${evNo(next)}`)}
+  else{renderReview();toast(`All ${E.length} events reviewed`,"Go to summary",()=>show("summary"))}}
+function selectEvent(id){ST.sel=id;const e=E.find(x=>x.id===id);ST.win=e.h-6/3600;closePop();TEMP=null;renderReview()}
+$("elist").addEventListener("click",e=>{const r=e.target.closest("[data-e]");if(r)selectEvent(+r.dataset.e)});
+$("eFilters").addEventListener("click",e=>{const b=e.target.closest("[data-ef]");if(b){ST.filter=b.dataset.ef;renderEvents()}});
+function renderReview(){renderOverview();renderECG();renderEvents()}
+
+/* ---------- 03 summary ---------- */
+const AFCELL={"0-15":6,"1-9":14,"1-16":5,"2-14":9};
+const CELLEV={"0-15":2,"1-9":6,"1-16":8,"2-14":12};
+function renderSummary(){
+  const rev=E.filter(e=>e.rev),af=rev.filter(e=>e.rev==="AF").length;
+  $("sumLine").textContent=`${rev.length} of ${E.length} events reviewed · ${af} confirmed AF · ${rev.length-af} other`;
+  let o="";DAYS.forEach((d,di)=>{o+=`<span class="L" style="position:absolute;left:0;top:${6+di*27}px">${d} ${di+1}</span>`;
+    for(let h=0;h<24;h++){const t=di*24+h-8;const rec=t>=0&&t<72;const k=di+"-"+h;const m=AFCELL[k];
+      o+=`<div class="cell${!rec?" nr":m?" af":""}" style="left:${84+h*33.333}px;top:${di*27}px;${m?`color:${m>=9?"var(--surface)":"var(--ink)"}`:""}" ${m?`data-cell="${k}" role="button" tabindex="0" aria-label="${d} ${P(h)}:00, ${m} minutes in AF. Open in review."`:""}>${m||""}</div>`}});
+  [["00",0],["06",6],["12",12],["18",18],["23",23]].forEach(([l,h])=>o+=`<span class="mono mute" style="position:absolute;top:110px;left:${84+h*33.333+8}px">${l}</span>`);
+  $("hgrid").innerHTML=o;
+  const B=[["Active",23,59],["Walk",9,15],["Rest",37,26],["Sleep",31,0]];
+  $("bars").innerHTML=B.map(([l,r,a],i)=>`<span class="L" style="position:absolute;left:0;top:${6+i*34}px">${l}</span>
+    <i style="position:absolute;left:64px;top:${2+i*34}px;height:8px;width:${r*5.1667}px;background:var(--walk)"></i><span class="mono mute" style="position:absolute;top:${-2+i*34}px;left:${70+r*5.1667}px">${r} %</span>
+    <i style="position:absolute;left:64px;top:${14+i*34}px;height:8px;width:${Math.max(1,a*5.1667)}px;background:var(--accent)"></i><span class="mono" style="position:absolute;top:${10+i*34}px;left:${70+Math.max(1,a*5.1667)}px">${a} %</span>`).join("");
+  $("syms").innerHTML=[["Dizzy, heart racing","Fri 09:45 · active",'<span class="tag accent">AF</span>'],["Palpitations","Sat 14:15 · rest",'<span class="tag accent">AF</span>'],["Chest tightness","Sat 22:30 · rest",'<span class="tag">Sinus rhythm</span>']]
+    .map(([a,b,t])=>`<div class="sym">${NOTE}<span style="flex:1;display:flex;flex-direction:column;gap:1px"><b style="font-weight:500">${a}</b><span class="small mute" style="color:var(--mute)">${b}</span></span>${t}</div>`).join("");
+  updateJournal();
+}
+$("hgrid").addEventListener("click",e=>{const c=e.target.closest("[data-cell]");if(c){selectEvent(CELLEV[c.dataset.cell]);show("review")}});
+$("hgrid").addEventListener("keydown",e=>{const c=e.target.closest("[data-cell]");if(c&&e.key==="Enter"){selectEvent(CELLEV[c.dataset.cell]);show("review")}});
+let saveMin=58;
+function autosave(){saveMin=Math.min(59,saveMin+1);$("autosave").textContent=`Draft · autosaved 09:${saveMin}`;ST.journalSaved=false;updateJournal()}
+["jAnam","jPlan"].forEach(id=>$(id).addEventListener("input",autosave));
+$("jObj").addEventListener("input",()=>{if(!ST.objEdited){ST.objEdited=true;const t=$("objTag");t.className="tag solid";t.textContent="Edited by you"}autosave()});
+$("jDx").addEventListener("change",e=>{$("jDxCode").textContent=(e.target.value||"—")+" ▾";$("dxLine").textContent=e.target.value?`${e.target.selectedOptions[0].text} · ${e.target.value}`:"Not chosen yet";autosave()});
+function updateJournal(){const left=E.filter(e=>e.auto==="AF"&&!e.created&&!e.rev).length;const dx=$("jDx").value;const b=$("saveJ");
+  if(ST.journalSaved){b.disabled=false;b.className="btnx primary";b.innerHTML=`Saved 10:02 ${CHECK.replace('viewBox="0 0 12 12"','viewBox="0 0 12 12" width="14" height="14"')}`;$("whyJ").textContent="Written to the hospital journal. Further edits make a new draft.";return}
+  b.className="btnx accent";b.innerHTML=`Save to journal ${ARROW}`;b.disabled=!!(left||!dx);
+  $("whyJ").innerHTML=left?`Review ${left} AF-suspect event${left>1?"s":""} first. <button data-go="review">Go to review</button>`:!dx?"Choose a diagnosis to save.":"";}
+$("saveJ").addEventListener("click",()=>{if($("saveJ").disabled||ST.journalSaved)return;ST.journalSaved=true;updateJournal();toast("Saved to the hospital journal at 10:02","Prepare consultation",()=>show("consult"))});
+
+/* ---------- 04 consult ---------- */
+const MATS=[{t:"Your normal rhythm · Fri 09:41",cap:"Evenly spaced beats, about 70 per minute.",hr:70,on:true},{t:"During an episode · Fri 09:42",cap:"Uneven spacing and a faster pulse, about 140 per minute.",hr:140,on:true}];
+function plainLine(el){el.innerHTML=`<div style="position:absolute;left:0;top:0;width:924px;height:40px;background:var(--surface)"></div>`+
+  [[192.5,89.833],[500.5,115.5],[814.92,109.083]].map(([x,w])=>`<div style="position:absolute;left:${x}px;top:0;width:${w}px;height:40px;background:var(--rest)"></div>`).join("")+
+  [92.07,327.82,415.08,693.18].map(x=>`<div style="position:absolute;left:${x}px;top:0;width:5px;height:40px;background:var(--accent)"></div>`).join("")+
+  [[4,"Thu"],[209.33,"Fri"],[517.33,"Sat"],[825.33,"Sun"]].map(([x,t])=>`<span class="L" style="position:absolute;left:${x}px;top:46px">${t}</span>`).join("")}
+const PSTAT=[["4","episodes in three days"],["34 min","in total, longest 14 min"],["3 of 4","while walking or working"],["2 of 3","of your notes match an episode"]];
+function stripSvg(hr,w,h){return `<svg width="${w}" height="${h}"><path d="${ecgPath(hr>110?11:3,hr>110?16:8,w,h,35,hr)}" fill="none" stroke="var(--ink)" stroke-width="1.1"/></svg>`}
+function renderConsult(){
+  document.querySelector("#v4 .plainstats").innerHTML=PSTAT.map(([a,b])=>`<div style="flex:1;display:flex;flex-direction:column;gap:2px"><span class="num">${a}</span><span class="small">${b}</span></div>`).join("");
+  document.querySelectorAll("#v4 .plainline").forEach(plainLine);
+  $("mats").innerHTML=MATS.map((m,i)=>`<div class="card mat${m.on?"":" off"}" data-m="${i}"><button style="display:flex;gap:10px;align-items:center" data-tick="${i}"><span class="cb" role="checkbox" aria-checked="${m.on}">${CHECK}</span><span style="font-weight:500">${m.t}</span></button><div class="mstrip">${stripSvg(m.hr,438,87.6)}</div><span class="small">${m.cap}</span></div>`).join("");
+  renderQ();
+}
+$("mats").addEventListener("click",e=>{const b=e.target.closest("[data-tick]");if(!b)return;const i=+b.dataset.tick;
+  if(MATS[i].on&&MATS.filter(m=>m.on).length===1){const c=$("mats").children[i];c.classList.remove("shake");void c.offsetWidth;c.classList.add("shake");$("matHint").textContent="Keep at least one item for the patient view.";return}
+  MATS[i].on=!MATS[i].on;$("matHint").textContent="";renderConsult()});
+let adding=false;
+function renderQ(){const rv=QUEST.filter(q=>q.src==="review").length,ad=QUEST.length-rv;$("qCount").textContent=`${rv} from review · ${ad} added`;
+  $("qlist").innerHTML=QUEST.map((q,i)=>`<button class="q" data-q="${i}"><span class="cb" role="checkbox" aria-checked="${q.on}">${CHECK}</span><span style="flex:1;display:flex;flex-direction:column;gap:6px;align-items:flex-start"><span>${q.text}</span>${q.from?`<span class="tag muted">${q.from}</span>`:""}</span></button>`).join("")+
+   (adding?`<div class="q" style="cursor:default"><span class="cb"></span><input class="box" id="newQ" placeholder="Type a question, then Enter" style="flex:1;padding:6px 8px" autocomplete="off"></div>`:`<button class="addq" id="addQ"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2.5v11M2.5 8h11"/></svg>Add question</button>`);
+  if(adding){const n=$("newQ");n.focus();n.onkeydown=e=>{if(e.key==="Enter"&&n.value.trim()){QUEST.push({text:n.value.trim(),on:true,src:"added"});adding=false;renderQ()}if(e.key==="Escape"){adding=false;renderQ()}};n.onblur=()=>{setTimeout(()=>{if(adding&&!n.value.trim()){adding=false;renderQ()}},150)}}
+  else $("addQ").onclick=()=>{adding=true;renderQ()};
+}
+$("qlist").addEventListener("click",e=>{const b=e.target.closest("[data-q]");if(b){const q=QUEST[+b.dataset.q];q.on=!q.on;renderQ()}});
+$("openPV").addEventListener("click",()=>{const pv=$("pview");
+  pv.querySelector(".pstats").innerHTML=PSTAT.map(([a,b])=>`<div style="display:flex;flex-direction:column;gap:4px"><span class="num">${a}</span><span class="small" style="font-size:13px">${b}</span></div>`).join("");
+  plainLine(pv.querySelector(".plainline"));
+  $("pvMats").innerHTML=MATS.filter(m=>m.on).map(m=>`<div class="card" style="gap:10px;flex:1"><span style="font-weight:500;font-size:15px">${m.t.split(" · ")[0]}</span><div class="mstrip">${stripSvg(m.hr,438,87.6)}</div><span class="small" style="font-size:13px">${m.cap}</span></div>`).join("");
+  pv.hidden=false;$("closePV").focus()});
+$("closePV").addEventListener("click",()=>{$("pview").hidden=true});
+$("printS").addEventListener("click",()=>toast("Printing is simulated in this prototype."));
+
+/* ---------- keyboard ---------- */
+document.addEventListener("keydown",e=>{
+  const typing=/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
+  if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="k"){e.preventDefault();show("patients");$("q").focus();return}
+  if(e.key==="Escape"){if(!$("pview").hidden){$("pview").hidden=true;return}if(popOpen||TEMP){TEMP=null;closePop();renderECG();return}}
+  if(ST.view!=="review")return;
+  if(popOpen){if(e.key==="Enter"){e.preventDefault();savePop()}else if(!typing&&/^[1-5]$/.test(e.key)){const c=CLASSES[+e.key-1];document.querySelector(`#popTags [data-c="${c}"]`).click()}return}
+  if(typing)return;
+  if(/^[1-5]$/.test(e.key))pickClass(CLASSES[+e.key-1]);
+  else if(e.key==="Enter"&&!document.activeElement.closest("button")){e.preventDefault();confirmEv()}
+  else if(ST.free&&(e.key==="ArrowRight"||e.key==="ArrowLeft")){ST.win=Math.max(0,Math.min(72,ST.win+(e.key==="ArrowRight"?5:-5)/3600));renderOverview();renderECG()}
+});
+
+renderThead();renderRows();fit();show(location.hash.slice(1)||"patients");
+})();
+</script>
+
+</body>
+</html>

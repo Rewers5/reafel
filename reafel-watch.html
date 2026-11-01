@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>REAFEL Wearable</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=Outfit:wght@600&display=swap">
+<style>
+/* Layout: storyboard desk — controls left, the 42 mm watch centred at ~1.75×, screen notes right. Single light look by design (watch is OLED black). */
+:root{
+  --ink:#111111; --ink-2:#55554f; --mute:#9a9a94; --line:#dadad5; --line-soft:#ebebe7;
+  --paper:#f3f3f1; --surface:#ffffff; --accent:#f04e2a; --raised:#2a2a27; --bezel:#1b1b19;
+  --f-display:"Outfit","Avenir Next","Segoe UI",sans-serif;
+  --f-body:"Geist","Helvetica Neue",Arial,sans-serif;
+  --f-mono:"Geist Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:13px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 48px}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.label{font-family:var(--f-mono);font-weight:500;font-size:9px;line-height:1.3;letter-spacing:.9px;text-transform:uppercase}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+header.top{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--ink);padding-bottom:18px}
+header.top h1{font-family:var(--f-display);font-weight:600;font-size:44px;line-height:1.05;letter-spacing:-.88px;margin:6px 0 0;text-wrap:balance}
+header.top p{margin:6px 0 0;color:var(--ink-2);font-size:11px;max-width:62ch}
+.eyebrow{color:var(--accent)}
+.grid{display:grid;grid-template-columns:260px 1fr 300px;gap:32px;align-items:start}
+@media (max-width:1000px){.grid{grid-template-columns:1fr}.stage{order:-1}}
+/* panels */
+.panel{display:flex;flex-direction:column;gap:18px;min-width:0}
+.block{display:flex;flex-direction:column;gap:8px}
+.block .label{color:var(--mute)}
+.sim{display:flex;flex-direction:column;gap:6px}
+.btn{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--ink);background:var(--surface);padding:10px 12px;border-radius:2px;text-align:left;font-size:13px;font-weight:500;transition:background .15s}
+.btn small{font-family:var(--f-mono);font-size:9px;letter-spacing:.9px;text-transform:uppercase;color:var(--mute);font-weight:500}
+.btn:hover{background:var(--line-soft)}
+.btn.accent{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.btn.accent small{color:rgba(255,255,255,.75)}
+.btn.accent:hover{background:#d9431f}
+.toggle{display:flex;gap:10px;align-items:flex-start;font-size:12px;color:var(--ink-2);cursor:pointer;padding:4px 0}
+.toggle input{appearance:none;width:16px;height:16px;border:1px solid var(--ink);border-radius:2px;margin:1px 0 0;flex:none;display:grid;place-items:center;cursor:pointer;background:var(--surface)}
+.toggle input:checked{background:var(--ink)}
+.toggle input:checked::after{content:"";width:8px;height:4px;border-left:1.5px solid var(--surface);border-bottom:1.5px solid var(--surface);transform:translateY(-1px) rotate(-45deg)}
+.seg{display:flex;border:1px solid var(--ink);border-radius:2px;overflow:hidden}
+.seg button{flex:1;padding:7px 4px;font-family:var(--f-mono);font-size:10px;border-right:1px solid var(--ink)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.jump{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+.jump button{font-family:var(--f-mono);font-size:10px;padding:6px 0;border:1px solid var(--line);border-radius:2px;background:var(--surface)}
+.jump button:hover{border-color:var(--ink)}
+.jump button.on{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.jump .row-l{grid-column:1/-1;color:var(--mute);margin-top:4px}
+/* stage */
+.stage{display:flex;flex-direction:column;align-items:center;gap:18px;padding-top:8px}
+.device{--s:1.75;position:relative;width:calc(207px*var(--s));height:calc(243px*var(--s))}
+@media (max-width:480px){.device{--s:1.45}}
+.device-inner{position:absolute;left:0;top:0;width:207px;height:243px;transform:scale(var(--s));transform-origin:0 0}
+.case{position:absolute;inset:0;background:var(--bezel);border-radius:48px;box-shadow:0 18px 40px rgba(17,17,17,.22),inset 0 0 0 1.5px #3a3a36}
+.crown{position:absolute;right:-7px;top:62px;width:10px;height:34px;border-radius:4px;background:#2c2c29;box-shadow:inset 0 0 0 1px #45453f;cursor:pointer}
+.crown::after{content:"";position:absolute;inset:6px 2px;background:repeating-linear-gradient(#3e3e39 0 1.5px,#2c2c29 1.5px 3px);border-radius:2px}
+.sidebtn{position:absolute;right:-4px;top:116px;width:6px;height:30px;border-radius:3px;background:#2c2c29;box-shadow:inset 0 0 0 1px #45453f;cursor:pointer}
+.screen{position:absolute;left:10px;top:10px;width:187px;height:223px;border-radius:38px;background:var(--ink);overflow:hidden}
+.device.buzz .device-inner{animation:buzz .32s linear}
+.device.buzz2 .device-inner{animation:buzz .26s linear 0s 2}
+.device.buzzX .device-inner{animation:buzz .2s linear 0s 4}
+@keyframes buzz{0%,100%{translate:0 0}20%{translate:-1.2px 0}40%{translate:1.2px 0}60%{translate:-.8px 0}80%{translate:.8px 0}}
+@media (prefers-reduced-motion:reduce){.device .device-inner{animation:none!important}}
+.haptic{min-height:20px;display:flex;align-items:center;gap:8px;color:var(--ink-2)}
+.haptic .dot{width:6px;height:6px;background:var(--accent);opacity:0;transition:opacity .2s}
+.haptic.on .dot{opacity:1}
+.caption{width:min(100%,360px);display:flex;flex-direction:column;gap:4px}
+.caption .id{color:var(--accent)}
+.caption .t{font-weight:500;font-size:13px}
+.caption .n{font-size:11px;color:var(--ink-2);line-height:1.45}
+/* notes */
+.mi{border:1px solid var(--ink);background:var(--surface);padding:16px;display:flex;flex-direction:column;gap:14px}
+.mi h3{margin:0;font-family:var(--f-body);font-weight:500;font-size:15px;display:flex;align-items:center;gap:10px}
+.marker{width:20px;height:20px;border:2px solid var(--accent);border-radius:10px;display:grid;place-items:center;font-family:var(--f-mono);font-size:10px;color:var(--accent);background:var(--surface);flex:none}
+.mi dl{margin:0;display:grid;grid-template-columns:64px 1fr;gap:8px 12px}
+.mi dt{color:var(--mute)}
+.mi dd{margin:0;font-size:11px;line-height:1.45;color:var(--ink)}
+.mi + .mi{margin-top:-4px}
+.empty{font-size:11px;color:var(--mute)}
+.log{display:flex;flex-direction:column;gap:0;border-top:1px solid var(--line)}
+.log div{display:flex;gap:10px;font-size:11px;padding:7px 0;border-bottom:1px solid var(--line)}
+.log span:first-child{font-family:var(--f-mono);color:var(--mute);width:38px;flex:none}
+
+/* ---------- watch UI (sizes from REAFEL/Watch/* styles) ---------- */
+.scr{position:absolute;inset:0;display:flex;flex-direction:column;gap:6px;padding:12px;color:var(--surface);animation:in .22s ease-out}
+@keyframes in{from{opacity:.0;transform:translateX(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.scr{animation:none}}
+.sb{display:flex;justify-content:space-between;align-items:center;padding:0 8px;font-weight:500;font-size:14px;line-height:1.3;white-space:nowrap;flex:none}
+.sb .ttl{color:var(--accent)}
+.sb button.ttl{cursor:pointer}
+.w-label{font-family:var(--f-mono);font-weight:500;font-size:11px;line-height:1.2;letter-spacing:.66px;text-transform:uppercase;color:var(--mute);white-space:nowrap}
+.w-label.hot{color:var(--accent)}
+.w-title{font-family:var(--f-display);font-weight:600;font-size:19px;line-height:1.12;letter-spacing:-.19px}
+.w-body{font-weight:500;font-size:15px;line-height:1.3}
+.w-cap{font-size:12px;line-height:1.3;color:var(--mute)}
+.w-big{display:flex;align-items:baseline;gap:6px}
+.w-big b{font-family:var(--f-display);font-weight:600;font-size:34px;line-height:1;letter-spacing:-.68px}
+.w-big span{font-weight:500;font-size:15px;color:var(--mute)}
+.center{text-align:center}
+.spacer{flex:1 0 0;min-height:0}
+.wbtn{height:40px;border-radius:20px;display:flex;gap:6px;align-items:center;justify-content:center;padding:0 12px;font-weight:600;font-size:13px;line-height:1.2;color:var(--surface);background:var(--accent);flex:none;width:100%;transition:filter .12s,transform .12s;white-space:nowrap}
+.wbtn.sec{background:var(--raised)}
+.wbtn:active{transform:scale(.97);filter:brightness(.9)}
+.wbtn[disabled]{opacity:.45;cursor:default}
+.wbtn svg{width:18px;height:18px;flex:none}
+.row2{display:flex;gap:6px;flex:none}
+.row2 .wbtn.sec{width:62px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;flex:none}
+.chip{height:26px;padding:0 10px;border-radius:13px;border:1.5px solid var(--ink-2);display:inline-flex;align-items:center;font-weight:500;font-size:12px;line-height:1.3;color:var(--surface);white-space:nowrap;transition:background .12s,border-color .12s,opacity .12s}
+.chip.sel{background:var(--accent);border-color:var(--accent)}
+.chip.off{opacity:.38;text-decoration:line-through;border-style:dashed}
+.lrow{background:var(--raised);border-radius:14px;padding:8px 8px 8px 10px;display:flex;gap:8px;align-items:center;width:100%;text-align:left;flex:none;transition:background .12s}
+.lrow:active{background:#363632}
+.lrow .d{width:8px;height:8px;border-radius:4px;background:var(--accent);flex:none}
+.lrow .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;white-space:nowrap;overflow:hidden}
+.lrow .m{font-family:var(--f-mono);font-weight:500;font-size:11px;line-height:1.2;color:var(--mute)}
+.lrow .tt{font-weight:500;font-size:14px;line-height:1.3}
+.lrow svg{width:14px;height:14px;flex:none}
+.list{display:flex;flex-direction:column;gap:6px;overflow-y:auto;scrollbar-width:none;margin:0 -2px;padding:0 2px 20px;flex:1;min-height:0}
+.list::-webkit-scrollbar{display:none}
+.stopwrap{display:flex;justify-content:center;flex:none}
+.stopbtn{position:relative;width:100px;height:100px}
+.ring{position:absolute;inset:0;border-radius:50%;background:var(--accent);transition:transform .12s linear}
+.ring.r1{opacity:.22}
+.ring.r2{inset:8px;opacity:.4}
+.ring.r3{inset:17px;opacity:1;display:grid;place-items:center}
+.ring.r3 svg{width:28px;height:28px}
+.spin{width:44px;height:44px;border-radius:50%;border:4px solid var(--raised);border-top-color:var(--accent);border-right-color:var(--accent);animation:spin .9s linear infinite;margin:0 auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation-duration:3s}}
+.checkc{width:48px;height:48px;border-radius:24px;background:var(--accent);display:grid;place-items:center;margin:0 auto;animation:pop .35s cubic-bezier(.3,1.6,.5,1)}
+.checkc svg{width:26px;height:26px}
+@keyframes pop{from{transform:scale(.4);opacity:0}to{transform:none;opacity:1}}
+.ovl{position:absolute;inset:0;background:rgba(17,17,17,.94);display:flex;flex-direction:column;justify-content:center;align-items:center;gap:8px;padding:24px;text-align:center;color:var(--surface)}
+.live{min-height:32px}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="label eyebrow">005 / Patient wearable · voice notes</div>
+      <h1>Tell us how it felt.</h1>
+      <p>Working prototype of the REAFEL watch app. The patient wears it next to the 72 h ECG recorder and speaks a short note when reafel flags an event or when they feel something. Tap the watch screen to use it; the panel on the left triggers what the system would do.</p>
+    </div>
+    <div class="label" style="color:var(--mute)">42 mm · ink OLED · Flows A–C</div>
+  </header>
+
+  <div class="grid">
+    <aside class="panel">
+      <div class="block">
+        <div class="label">Simulate</div>
+        <div class="sim">
+          <button class="btn accent" data-sim="flag">reafel flags an event<small>Flow A</small></button>
+          <button class="btn" data-sim="nudge">18:00 nudge · open Today<small>Flow C</small></button>
+          <button class="btn" data-sim="home">Back to Home<small>Reset</small></button>
+        </div>
+      </div>
+      <div class="block">
+        <div class="label">Next recording</div>
+        <label class="toggle"><input type="checkbox" id="tNoisy"> Too noisy to hear (construction site)</label>
+        <label class="toggle"><input type="checkbox" id="tUrgent"> Patient describes fainting and ongoing chest pain</label>
+      </div>
+      <div class="block">
+        <div class="label">Time of day</div>
+        <div class="seg" role="group" aria-label="Time of day">
+          <button data-clock="09:41" aria-pressed="true">09:41</button>
+          <button data-clock="14:10" aria-pressed="false">14:10</button>
+          <button data-clock="18:02" aria-pressed="false">18:02</button>
+        </div>
+      </div>
+      <div class="block">
+        <div class="label">Jump to screen</div>
+        <div class="jump" id="jump"></div>
+      </div>
+      <div class="block">
+        <div class="label">Watch hardware</div>
+        <p class="empty" style="margin:0">Crown opens Today. Side button skips the activity question (B4).</p>
+      </div>
+    </aside>
+
+    <main class="stage">
+      <div class="device" id="device">
+        <div class="device-inner">
+          <div class="case"></div>
+          <button class="crown" id="crown" aria-label="Digital Crown: open Today"></button>
+          <button class="sidebtn" id="side" aria-label="Side button: skip"></button>
+          <div class="screen" id="screen" aria-live="polite"></div>
+        </div>
+      </div>
+      <div class="haptic label" id="haptic"><span class="dot"></span><span id="hapticTx">No haptic</span></div>
+      <div class="caption">
+        <div class="label id" id="capId">A1</div>
+        <div class="t" id="capT">Home · monitoring</div>
+        <div class="n" id="capN"></div>
+      </div>
+    </main>
+
+    <aside class="panel">
+      <div class="block">
+        <div class="label">Microinteraction</div>
+        <div id="mi"></div>
+      </div>
+      <div class="block">
+        <div class="label">Notes saved to events · read in 02 Review</div>
+        <div class="log" id="log"></div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+(()=>{
+const ic={
+  mic:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  stop:'<svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2.5" fill="#fff"/></svg>',
+  redo:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4v4.5H9"/></svg>',
+  clock:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
+  chev:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>',
+  heart:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M12 20s-7.5-4.5-7.5-10.2A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 7.5 2.8C19.5 15.5 12 20 12 20z"/></svg>',
+  heartA:'<svg viewBox="0 0 24 24" fill="none" stroke="#f04e2a" stroke-width="2.4" stroke-linejoin="round"><path d="M12 20s-7.5-4.5-7.5-10.2A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 7.5 2.8C19.5 15.5 12 20 12 20z"/></svg>'
+};
+const TX={
+  A:{live:"Felt dizzy and heart racing on the scaffold",note:"Felt dizzy and heart racing on the scaffold.",tags:["Dizzy","Palpitations"]},
+  B:{live:"Chest feels tight, heart pounding",note:"Chest feels tight, heart pounding.",tags:["Chest tight","Palpitations"]},
+  C:{live:"Out of breath walking up the stairs",note:"Out of breath walking up the stairs.",tags:["Breathless"]},
+  U:{live:"I nearly passed out and the chest pain won't stop, help",note:"Nearly passed out, chest pain won't stop, asks for help.",tags:["Faint","Chest tight"],urgent:true},
+  N:{live:"[noise] …the… [drill]",noisy:true}
+};
+const CAP={
+  A1:["Home · monitoring","Glance: recording time left and the activity the watch detects. One action only: Add a note (→ Flow B)."],
+  A2:["New event prompt","Haptic + wrist raise. A neutral question — no rhythm label or diagnosis is shown to the patient."],
+  A3:["Listening","Mic is on only while this screen is open. Rings follow voice level, timer in the corner, words appear live."],
+  A4:["Transcribing","Speech-to-text runs on the paired phone, then a short clean-up step that keeps the patient's own words."],
+  A5:["Check your note","The patient sees exactly what the doctor will read. Suggested symptom tags can be tapped off."],
+  A6:["Saved","Sets expectations: notes are read later, not monitored live. Returns to Home after 3 s."],
+  B2:["Listening · new event","Same screen as A3. The header confirms a new event was created at the moment of the tap."],
+  B3:["Check your note","Same check step as A5: the patient approves the text before anyone else sees it."],
+  B4:["Confirm activity","Pre-selects what the watch detected; one tap corrects it. Crown scrolls to the rest. Skippable."],
+  B5:["Saved","Patient-marked events reach the doctor even if the ECG looks normal at that moment."],
+  C1:["Couldn’t hear","Says why it failed instead of “error”. One retry, then the tap fallback."],
+  C2:["Pick symptoms","Same words the doctor sees as patient-note tags. Multi-select, saved as “Symptoms: dizzy, chest tight”."],
+  C3:["Today’s events","Newest last, orange dot = still needs an answer. Evening nudge only if something is open."],
+  C4:["Answer an open event","“No symptoms” is a real answer and is saved as such — useful to the doctor too."],
+  C5:["Emergency notice","Shown only when the note describes fainting, ongoing chest pain or a call for help. Nobody is alerted automatically — and the screen says so."]
+};
+const MI={
+  prompt:["1","New event prompt","reafel flags an event while the patient is awake.","Max one prompt per 30 min, none during sleep. Neutral wording, no rhythm label. Unanswered after 10 min → stays open in Today (C3).","Two short haptic taps; screen wakes on wrist raise. Later snoozes 10 min."],
+  record:["2","Record","Tap Speak (A2) or Add a note (B1, C4).","Mic on only while this screen is open. Stops on tap, after 3 s of silence, or at 30 s. Cancel throws the audio away.","Rings grow with voice level, timer counts up in the corner, words appear live. One haptic tap on stop."],
+  save:["3","Save","Tap Save.","Note is attached to the event time, not the save time. Audio deleted once the text is saved. Tags are suggestions — tap one to remove it.","Check + success haptic, Home after 3 s. In 02 Review the note shows in the Patient notes lane and event panel, source “watch · voice”."],
+  redo:["4","Redo","Tap Redo.","Discards the text and returns to listening for the same event. After two redos, Pick symptoms (C2) is offered.","Text clears and the listening rings start again."],
+  mark:["1","Mark a new event","Tap Add a note on Home or the watch-face complication.","Creates an event at tap time, tagged PT MARKED, with ECG kept ±2 min around it. Only one open recording at a time.","Goes straight to listening; header reads “New event · time”."],
+  activity:["2","Correct activity","Tap a row after saving; skip with the side button or crown.","Detected activity is pre-selected. Same four classes as the dashboard Activity lane: sleep, rest, walk, active.","Chosen row gets the dot. In 02 Review the Activity lane updates and is marked “pt corrected”."],
+  fallback:["1","Voice fallback","Too noisy, nothing recognised, or the clean-up step returns “unclear”.","Never saves an empty or garbled note. One retry, and Pick symptoms is always there.","A single “failure” haptic. The message says why (“Too noisy to hear”), never just “Error”."],
+  catchup:["2","Catch up later","Open the app, or the 18:00 nudge if any event is still open.","One nudge per day at most. “No symptoms” is saved as an answer. Nothing is mandatory.","Orange dot disappears once answered."],
+  urgent:["3","Emergency notice","Clean-up step sets urgent: true (fainting, ongoing chest pain, asks for help).","The note is saved first. No automatic alarm to anyone — reafel is not a live monitoring service.","Strong haptic, full-width Call 112 button. I’m OK returns to Home."]
+};
+const MIMAP={A1:["mark"],A2:["prompt"],A3:["record"],B2:["mark","record"],A4:["record"],A5:["save","redo"],B3:["save","redo"],A6:["save"],B4:["activity"],B5:["save"],C1:["fallback"],C2:["fallback"],C3:["catchup"],C4:["catchup"],C5:["urgent"]};
+
+const S={screen:"A1",clock:"09:41",ev:null,redo:0,activity:"walking",today:[
+  {t:"07:55",meta:"07:55 · 4 min",title:"Note added",open:false}
+],log:[],timers:[],sel:{}};
+const $=id=>document.getElementById(id);
+const scr=$("screen");
+const min=(t,d)=>{let[h,m]=t.split(":").map(Number);m+=d;h+=Math.floor(m/60);m=((m%60)+60)%60;return String(h%24).padStart(2,"0")+":"+String(m).padStart(2,"0")};
+const hoursLeft=()=>{const[h,m]=S.clock.split(":").map(Number);return Math.max(1,Math.round(40.5-(h+m/60)))}; // 09:41 → 31 h, 14:10 → 26 h
+function clear(){S.timers.forEach(t=>{clearTimeout(t);clearInterval(t)});S.timers=[]}
+function later(fn,ms){S.timers.push(setTimeout(fn,ms))}
+function haptic(kind){
+  const d=$("device");d.classList.remove("buzz","buzz2","buzzX");void d.offsetWidth;
+  const map={tap:["buzz","One haptic tap"],two:["buzz2","Two short haptic taps"],ok:["buzz2","Success haptic"],fail:["buzz","Failure haptic"],strong:["buzzX","Strong haptic"]};
+  const [c,t]=map[kind];d.classList.add(c);$("haptic").classList.add("on");$("hapticTx").textContent=t;
+  clearTimeout(haptic.t);haptic.t=setTimeout(()=>{$("haptic").classList.remove("on");$("hapticTx").textContent="No haptic"},1600);
+}
+const sb=(title,time,act)=>`<div class="sb">${act?`<button class="ttl" data-a="${act}">${title}</button>`:`<span class="ttl">${title}</span>`}<span>${time}</span></div>`;
+const btn=(label,act,icon,sec,extra="")=>`<button class="wbtn${sec?" sec":""}" data-a="${act}" ${extra}>${icon?ic[icon]:""}${label}</button>`;
+
+const R={
+  A1(){const a=S.activity;return `${sb("reafel",S.clock)}
+    <div class="w-label">Recording · day 2 of 3</div>
+    <div class="w-big"><b>${hoursLeft()} h</b><span>left</span></div>
+    <div style="display:flex;gap:6px;align-items:center" class="w-cap"><span style="width:14px;height:14px;display:inline-flex">${ic.heartA}</span>ECG on · ${a}</div>
+    <div class="spacer"></div>
+    ${btn("Add a note","addnote","mic")}`},
+  A2(){return `${sb("reafel",S.ev.time)}
+    <div class="w-label hot">● New event · ${S.ev.time}</div>
+    <div class="w-title">How do you feel right now?</div>
+    <div class="spacer"></div>
+    ${btn("Speak","speak","mic")}${btn("Later","later","clock",1)}`},
+  LISTEN(){const ev=S.ev;return `${sb("‹ Cancel","0:00","cancel")}
+    ${ev.mode==="manual"?`<div class="w-label hot">● New event · ${ev.time}</div>`:""}
+    <div class="w-body center">Listening…</div>
+    <div class="stopwrap"><button class="stopbtn" data-a="stop" aria-label="Stop recording"><span class="ring r1" id="r1"></span><span class="ring r2" id="r2"></span><span class="ring r3" id="r3">${ic.stop}</span></button></div>
+    <div class="w-cap center live" id="live">&nbsp;</div>`},
+  A4(){return `${sb("reafel",min(S.ev.time,1))}
+    <div class="spacer"></div><div class="spin" role="img" aria-label="Transcribing"></div>
+    <div class="w-body center">Writing it down…</div>
+    <div class="w-cap center">Usually about 2 seconds</div><div class="spacer"></div>`},
+  CHECK(){const ev=S.ev;const lab=ev.mode==="manual"?`You marked · ${ev.time}`:`Event ${ev.time}`;
+    return `${sb("Your note",min(ev.time,1))}
+    <div class="w-label">${lab}</div>
+    <div class="w-body">${ev.note}</div>
+    <div class="chips">${ev.tags.map((t,i)=>`<button class="chip${ev.off[i]?" off":""}" data-a="chip" data-i="${i}" aria-pressed="${!ev.off[i]}">${t}</button>`).join("")}</div>
+    <div class="spacer"></div>
+    <div class="row2">${btn("Redo","redo",null,1)}${btn("Save","save","check",0,'style="flex:1;width:auto"')}</div>`},
+  SAVED(){const ev=S.ev;const manual=ev.mode==="manual";
+    return `${sb("reafel",min(ev.time,1))}<div class="spacer"></div>
+    <div class="checkc">${ic.check}</div>
+    <div class="w-title center">${ev.symptomsOnly?"Saved · ":""}${manual?`Event ${ev.time} saved`:`Added to event ${ev.time}`}</div>
+    <div class="w-cap center">Your doctor reads it at review. Not watched live — unwell? Call 112.</div><div class="spacer"></div>`},
+  B4(){const rows=[["resting","Detected","Resting"],["walking","Light effort","Walking"],["active","Work, sport","Active"],["sleeping","Lying down","Sleep"]];
+    const pick=S.ev.activity;return `${sb("Activity",min(S.ev.time,1))}
+    <div class="w-body">What were you doing?</div>
+    <div class="list">${rows.map(([k,m,t])=>`<button class="lrow" data-a="act" data-k="${k}">${pick===k?'<span class="d"></span>':""}<span class="tx"><span class="m">${k===S.ev.detected?"Detected":m}</span><span class="tt">${t}</span></span>${ic.chev}</button>`).join("")}</div>`},
+  C1(){const two=S.ev.reason==="redo";return `${sb("reafel",min(S.ev.time,1))}
+    <div class="w-label hot">${two?"Redone twice":"Too noisy to hear"}</div>
+    <div class="w-title">${two?"Pick instead?":"Didn’t catch that."}</div>
+    <div class="spacer"></div>
+    ${btn("Try again","retry","redo")}${btn("Pick symptoms","pick","heart",1)}`},
+  C2(){const all=["Dizzy","Palpitations","Chest tight","Breathless","Faint"];const n=all.filter(t=>S.sel[t]).length;
+    return `${sb("Symptoms",min(S.ev.time,1))}
+    <div class="chips">${all.map(t=>`<button class="chip${S.sel[t]?" sel":""}" data-a="sym" data-t="${t}" aria-pressed="${!!S.sel[t]}">${t}</button>`).join("")}</div>
+    <div class="spacer"></div>
+    ${btn(n?`Save ${n}`:"Pick at least one","savesym","check",0,n?"":"disabled")}`},
+  C3(){return `${sb("Today","18:02","home")}
+    <div class="list">${S.today.map((r,i)=>`<button class="lrow" data-a="row" data-i="${i}">${r.open?'<span class="d"></span>':""}<span class="tx"><span class="m">${r.meta}</span><span class="tt">${r.open?"Add a note":r.title}</span></span>${ic.chev}</button>`).join("")}</div>`},
+  C4(){const r=S.today[S.openRow];return `${sb("‹ Today","18:02","today")}
+    <div class="w-label">Event ${r.meta.replace(/ · /," · ")}</div>
+    <div class="w-title">You were ${r.act||"walking"}. How did it feel?</div>
+    <div class="spacer"></div>
+    ${btn("Add a note","rownote","mic")}${btn("No symptoms","nosym","check",1)}`},
+  C5(){return `${sb("reafel",min(S.ev.time,2))}
+    <div class="w-label">Note saved</div>
+    <div class="w-title">Emergency? Call 112.</div>
+    <div class="spacer"></div>
+    ${btn("Call 112","call")}${btn("I’m OK","ok","check",1)}`},
+  C3done(){return R.C3()}
+};
+const IDS={A1:"A1",A2:"A2",A4:"A4",B4:"B4",C1:"C1",C2:"C2",C3:"C3",C4:"C4",C5:"C5"};
+function idFor(s){
+  if(s==="LISTEN")return S.ev&&S.ev.mode==="manual"?"B2":"A3";
+  if(s==="CHECK")return S.ev&&S.ev.mode==="manual"?"B3":"A5";
+  if(s==="SAVED")return S.ev&&S.ev.mode==="manual"?"B5":"A6";
+  if(s==="A1"&&S.clock==="14:10")return "B1";
+  return IDS[s]||s;
+}
+function go(s){
+  clear();S.screen=s;scr.innerHTML=`<div class="scr">${R[s]()}</div>`;
+  const id=idFor(s);const capKey=id==="B1"?"A1":id;const c=CAP[capKey];
+  $("capId").textContent=id;$("capT").textContent=id==="B1"?"Home · tap Add a note":c[0];$("capN").textContent=c[1];
+  $("mi").innerHTML=(MIMAP[capKey]||[]).map(k=>{const[m,t,tr,ru,fb]=MI[k];return `<div class="mi"><h3><span class="marker">${m}</span>${t}</h3><dl><dt class="label">Trigger</dt><dd>${tr}</dd><dt class="label">Rules</dt><dd>${ru}</dd><dt class="label">Feedback</dt><dd>${fb}</dd></dl></div>`}).join("");
+  document.querySelectorAll("#jump button[data-j]").forEach(b=>b.classList.toggle("on",b.dataset.j===id));
+  if(s==="LISTEN")listen();
+  if(s==="A4")later(()=>{if(S.ev.unclear){haptic("fail");S.ev.reason="noise";go("C1")}else go("CHECK")},2000);
+  if(s==="SAVED")later(()=>{S.ev.urgent?(haptic("strong"),go("C5")):go("A1")},S.ev.urgent?1400:3000);
+}
+function newEvent(mode,time,txKey,extra={}){
+  const urgent=$("tUrgent").checked,noisy=$("tNoisy").checked;
+  const key=noisy?"N":urgent?"U":txKey;
+  S.ev=Object.assign({mode,time,key,tx:TX[key],note:"",tags:[],off:[],urgent:false,unclear:false,detected:"resting",activity:"resting"},extra);
+  S.redo=0;
+}
+function listen(){
+  const ev=S.ev,tx=ev.tx;let el=0,ch=0,quiet=0;
+  const live=$("live"),time=scr.querySelector(".sb span:last-child");
+  const r1=$("r1"),r2=$("r2");
+  const t=setInterval(()=>{
+    el+=.1;const speaking=ch<tx.live.length;
+    if(speaking){ch=Math.min(tx.live.length,ch+1.5)}else quiet+=.1;
+    const shown=tx.live.slice(0,Math.floor(ch));
+    live.textContent="“"+(shown.length>34?shown.slice(shown.length-34).replace(/^\S*\s/,"")+"…":shown)+(speaking?"":"”");
+    time.textContent="0:"+String(Math.floor(el)).padStart(2,"0");
+    const lv=speaking?.55+Math.random()*.45:.08+Math.random()*.06;
+    r1.style.transform=`scale(${.84+.16*lv})`;r2.style.transform=`scale(${.9+.1*lv})`;
+    if(quiet>=3||el>=30){stopRec()}
+  },100);S.timers.push(t);
+}
+function stopRec(){
+  const ev=S.ev;haptic("tap");
+  if(ev.tx.noisy){ev.unclear=true;$("tNoisy").checked=false;}
+  else{ev.note=ev.tx.note;ev.tags=ev.tx.tags.slice();ev.off=ev.tags.map(()=>false);ev.urgent=!!ev.tx.urgent;ev.unclear=false}
+  go("A4");
+}
+function saveNote(symptoms){
+  const ev=S.ev;const tags=symptoms||ev.tags.filter((_,i)=>!ev.off[i]);
+  const text=symptoms?"Symptoms: "+symptoms.map(s=>s.toLowerCase()).join(", "):ev.note;
+  S.log.unshift({t:ev.time,text,tags,src:ev.mode==="manual"?"PT MARKED · watch · voice":(symptoms?"watch · tap":"watch · voice")});
+  const ex=S.today.find(r=>r.t===ev.time);
+  if(ex){ex.open=false;ex.title="Note added"}else S.today.push({t:ev.time,meta:ev.time+(ev.mode==="manual"?" · you marked":" · 6 min"),title:"Note added",open:false});
+  if(ev.urgent)$("tUrgent").checked=false;
+  renderLog();haptic("ok");
+}
+function renderLog(){
+  $("log").innerHTML=S.log.length?S.log.map(l=>`<div><span>${l.t}</span><span>${l.text}<br><span class="label" style="color:var(--mute)">${l.src}${l.tags.length?" · "+l.tags.join(", "):""}</span></span></div>`).join(""):`<div><span>—</span><span class="empty">Nothing saved yet. Notes appear here after Save.</span></div>`;
+}
+
+scr.addEventListener("click",e=>{
+  const b=e.target.closest("[data-a]");if(!b)return;const a=b.dataset.a,ev=S.ev;
+  switch(a){
+    case"addnote":newEvent("manual",S.clock,"B",{detected:"resting",activity:"resting"});haptic("tap");go("LISTEN");break;
+    case"speak":go("LISTEN");break;
+    case"later":S.today.push({t:ev.time,meta:ev.time+" · flagged",title:"Note added",open:true,act:S.activity});go("A1");break;
+    case"cancel":S.ev=null;go("A1");break;
+    case"stop":stopRec();break;
+    case"chip":{const i=+b.dataset.i;ev.off[i]=!ev.off[i];b.classList.toggle("off",ev.off[i]);b.setAttribute("aria-pressed",!ev.off[i]);break}
+    case"redo":S.redo++;if(S.redo>=2){ev.reason="redo";go("C1")}else{ev.tx=TX[ev.key==="N"?"A":ev.key];go("LISTEN")}break;
+    case"save":saveNote();ev.mode==="manual"?go("B4"):go("SAVED");break;
+    case"act":ev.activity=b.dataset.k;go("B4");later(()=>go("SAVED"),350);break;
+    case"retry":ev.tx=TX[ev.key==="N"?(ev.mode==="manual"?"B":"A"):ev.key];if(ev.tx.noisy)ev.tx=TX.A;go("LISTEN");break;
+    case"pick":S.sel={};go("C2");break;
+    case"sym":S.sel[b.dataset.t]=!S.sel[b.dataset.t];go("C2");break;
+    case"savesym":{const tags=Object.keys(S.sel).filter(k=>S.sel[k]);saveNote(tags);ev.symptomsOnly=false;go("SAVED");break}
+    case"home":go("A1");break;
+    case"today":go("C3");break;
+    case"row":{const i=+b.dataset.i;if(S.today[i].open){S.openRow=i;go("C4")}break}
+    case"rownote":{const r=S.today[S.openRow];newEvent("open",r.t,r.t==="16:30"?"C":"A");go("LISTEN");break}
+    case"nosym":{const r=S.today[S.openRow];r.open=false;r.title="No symptoms";S.log.unshift({t:r.t,text:"No symptoms",tags:[],src:"watch · tap"});renderLog();haptic("ok");go("C3");break}
+    case"call":scr.querySelector(".scr").insertAdjacentHTML("beforeend",`<div class="ovl"><div class="w-title">Calling 112…</div><div class="w-cap">Prototype: no call is placed.</div><button class="wbtn sec" data-a="ok" style="margin-top:8px">${ic.check}Done</button></div>`);break;
+    case"ok":S.ev=null;go("A1");break;
+  }
+});
+$("crown").addEventListener("click",()=>{haptic("tap");S.screen==="C3"?go("A1"):go("C3")});
+$("side").addEventListener("click",()=>{if(S.screen==="B4"){haptic("tap");go("SAVED")}});
+document.querySelectorAll("[data-sim]").forEach(b=>b.addEventListener("click",()=>{
+  const k=b.dataset.sim;
+  if(k==="flag"){newEvent("flagged",min(S.clock,1),"A");haptic("two");go("A2")}
+  if(k==="nudge"){setClock("18:02");if(!S.today.some(r=>r.open))S.today.push({t:"16:30",meta:"16:30 · 5 min",title:"Note added",open:true,act:"walking"});haptic("tap");go("C3")}
+  if(k==="home"){S.ev=null;go("A1")}
+}));
+function setClock(c){S.clock=c;S.activity=c==="14:10"?"resting":c==="18:02"?"walking":"walking";
+  document.querySelectorAll("[data-clock]").forEach(x=>x.setAttribute("aria-pressed",x.dataset.clock===c))}
+document.querySelectorAll("[data-clock]").forEach(b=>b.addEventListener("click",()=>{setClock(b.dataset.clock);if(S.screen==="A1")go("A1")}));
+
+// jump grid
+const J=[["Flow A",["A1","A2","A3","A4","A5","A6"]],["Flow B",["B1","B2","B3","B4","B5"]],["Flow C",["C1","C2","C3","C4","C5"]]];
+$("jump").innerHTML=J.map(([l,ids])=>`<span class="label row-l">${l}</span>`+ids.map(i=>`<button data-j="${i}">${i}</button>`).join("")).join("");
+$("jump").addEventListener("click",e=>{const b=e.target.closest("[data-j]");if(!b)return;const id=b.dataset.j;
+  const flowA=()=>newEvent("flagged","09:42","A"),flowB=()=>newEvent("manual","14:10","B");
+  const ready=()=>{S.ev.note=S.ev.tx.note;S.ev.tags=S.ev.tx.tags.slice();S.ev.off=S.ev.tags.map(()=>false)};
+  switch(id){
+    case"A1":setClock("09:41");go("A1");break;
+    case"A2":setClock("09:41");flowA();go("A2");break;
+    case"A3":setClock("09:41");flowA();go("LISTEN");break;
+    case"A4":setClock("09:41");flowA();ready();go("A4");break;
+    case"A5":setClock("09:41");flowA();ready();go("CHECK");break;
+    case"A6":setClock("09:41");flowA();ready();go("SAVED");break;
+    case"B1":setClock("14:10");go("A1");break;
+    case"B2":setClock("14:10");flowB();go("LISTEN");break;
+    case"B3":setClock("14:10");flowB();ready();go("CHECK");break;
+    case"B4":setClock("14:10");flowB();ready();go("B4");break;
+    case"B5":setClock("14:10");flowB();ready();go("SAVED");break;
+    case"C1":S.ev={mode:"open",time:"16:30",key:"A",tx:TX.A,tags:[],off:[],reason:"noise"};go("C1");break;
+    case"C2":S.ev={mode:"open",time:"16:30",key:"A",tx:TX.A,tags:[],off:[]};S.sel={Dizzy:true,"Chest tight":true};go("C2");break;
+    case"C3":if(!S.today.some(r=>r.open))S.today.push({t:"16:30",meta:"16:30 · 5 min",title:"Note added",open:true,act:"walking"});go("C3");break;
+    case"C4":{let i=S.today.findIndex(r=>r.open);if(i<0){S.today.push({t:"16:30",meta:"16:30 · 5 min",title:"Note added",open:true,act:"walking"});i=S.today.length-1}S.openRow=i;go("C4");break}
+    case"C5":S.ev={mode:"open",time:"16:30",key:"U",tx:TX.U,urgent:true,tags:[],off:[]};go("C5");break;
+  }
+});
+// seed "Today" with the morning's earlier notes so C3 matches the storyboard
+S.today=[{t:"09:42",meta:"09:42 · 6 min",title:"Note added",open:false},{t:"14:10",meta:"14:10 · you marked",title:"Note added",open:false}];
+renderLog();go("A1");
+})();
+</script>
+
+</body>
+</html>
